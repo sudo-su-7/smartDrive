@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="breadcrumb-section">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0 small">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+        <li class="breadcrumb-item active">Vehicles</li>
+      </ol>
+    </nav>
+  </div>
+</div>
+
+<div class="container py-4">
+  <div class="row g-4">
+
+    <!-- Sidebar Filters -->
+    <div class="col-lg-3">
+      <div class="filter-card card p-3">
+        <h6 class="fw-bold mb-3"><i class="bi bi-funnel me-2"></i>Filter Vehicles</h6>
+        <form method="GET" action="{{ url_for('main.vehicles') }}" id="filterForm">
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Search</label>
+            <div class="input-group input-group-sm">
+              <input type="text" name="q" class="form-control" placeholder="Name, model, plate…"
+                     value="{{ search }}">
+              <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Fuel Type</label>
+            <select name="fuel" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="">All</option>
+              {% for f in [("petrol","Petrol"),("diesel","Diesel"),("electric","Electric"),("hybrid","Hybrid")] %}
+              <option value="{{ f[0] }}" {% if fuel == f[0] %}selected{% endif %}>{{ f[1] }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Transmission</label>
+            <select name="transmission" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="">All</option>
+              <option value="automatic" {% if trans == 'automatic' %}selected{% endif %}>Automatic</option>
+              <option value="manual" {% if trans == 'manual' %}selected{% endif %}>Manual</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Price / Day (KES)</label>
+            <div class="row g-1">
+              <div class="col">
+                <input type="number" name="min_price" class="form-control form-control-sm"
+                       placeholder="Min" value="{{ min_price or '' }}" min="0">
+              </div>
+              <div class="col">
+                <input type="number" name="max_price" class="form-control form-control-sm"
+                       placeholder="Max" value="{{ max_price or '' }}" min="0">
+              </div>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary w-100 mt-2" type="submit">Apply</button>
+          </div>
+
+          {% if search or fuel or trans or min_price or max_price %}
+          <a href="{{ url_for('main.vehicles') }}" class="btn btn-sm btn-link text-muted p-0">
+            <i class="bi bi-x-circle me-1"></i>Clear filters
+          </a>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+
+    <!-- Vehicle Grid -->
+    <div class="col-lg-9">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0 fw-bold">
+          {{ paginator.total }} vehicle{{ 's' if paginator.total != 1 }} found
+        </h5>
+      </div>
+
+      {% if vehicles %}
+      <div class="row g-4">
+        {% for vehicle in vehicles %}
+        <div class="col-sm-6 col-xl-4">
+          <div class="card vehicle-card h-100">
+            {% if vehicle.image %}
+            <img src="{{ url_for('static', filename='uploads/vehicles/' + vehicle.image) }}"
+                 class="card-img-top" alt="{{ vehicle.name }}" />
+            {% else %}
+            <div class="vehicle-placeholder"><i class="bi bi-car-front"></i></div>
+            {% endif %}
+
+            <div class="card-body d-flex flex-column">
+              <div class="d-flex justify-content-between mb-1">
+                <h6 class="card-title fw-bold mb-0">{{ vehicle.name }}</h6>
+                <span class="badge status-{{ vehicle.status }} badge-status">{{ vehicle.status|title }}</span>
+              </div>
+              <p class="text-muted small mb-2">{{ vehicle.model }} · <i class="bi bi-car-front-fill me-1"></i>{{ vehicle.plate_number }}</p>
+
+              <div class="d-flex flex-wrap gap-2 small text-muted mb-3">
+                <span><i class="bi bi-fuel-pump me-1"></i>{{ vehicle.fuel_type|title }}</span>
+                <span><i class="bi bi-gear me-1"></i>{{ vehicle.transmission|title }}</span>
+                <span><i class="bi bi-people me-1"></i>{{ vehicle.capacity }} seats</span>
+              </div>
+
+              <div class="mt-auto d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="fw-bold text-primary">KES {{ '{:,.0f}'.format(vehicle.price_per_day) }}</span>
+                  <small class="text-muted">/day</small>
+                </div>
+                <div class="d-flex gap-2">
+                  <a href="{{ url_for('main.vehicle_detail', vehicle_id=vehicle._id) }}"
+                     class="btn btn-outline-secondary btn-sm">Details</a>
+                  {% if vehicle.status == 'available' %}
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('user.book_vehicle', vehicle_id=vehicle._id) }}"
+                       class="btn btn-primary btn-sm">Book</a>
+                    {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-sm">Book</a>
+                    {% endif %}
+                  {% else %}
+                  <button class="btn btn-secondary btn-sm" disabled>Unavailable</button>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Pagination -->
+      {% if paginator.pages > 1 %}
+      <nav class="mt-5 d-flex justify-content-center" aria-label="Vehicle pages">
+        <ul class="pagination">
+          <li class="page-item {% if not paginator.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('main.vehicles', page=paginator.prev_num, q=search, fuel=fuel, transmission=trans, min_price=min_price, max_price=max_price) }}">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          </li>
+          {% for p in paginator.iter_pages() %}
+            {% if p %}
+            <li class="page-item {% if p == paginator.page %}active{% endif %}">
+              <a class="page-link" href="{{ url_for('main.vehicles', page=p, q=search, fuel=fuel, transmission=trans, min_price=min_price, max_price=max_price) }}">{{ p }}</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
+          {% endfor %}
+          <li class="page-item {% if not paginator.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('main.vehicles', page=paginator.next_num, q=search, fuel=fuel, transmission=trans, min_price=min_price, max_price=max_price) }}">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          </li>
+        </ul>
+      </nav>
+      {% endif %}
+
+      {% else %}
+      <div class="text-center py-5">
+        <i class="bi bi-car-front display-1 text-muted"></i>
+        <h4 class="mt-3 text-muted">No vehicles found</h4>
+        <p class="text-muted">Try adjusting your filters.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

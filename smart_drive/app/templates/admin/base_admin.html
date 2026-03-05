@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block extra_head %}{% block admin_extra_head %}{% endblock %}{% endblock %}
+{% block extra_scripts %}{% block admin_extra_scripts %}{% endblock %}{% endblock %}
+
+{% block content %}
+<div class="d-flex" style="min-height: calc(100vh - 140px)">
+
+  <!-- ── Admin Sidebar ──────────────────────────────────────────────────────── -->
+  <div class="admin-sidebar bg-dark text-white d-flex flex-column" style="width:240px;min-width:240px;padding:1.5rem 0">
+
+    <div class="px-3 mb-3">
+      <small class="text-uppercase text-white-50 fw-bold" style="letter-spacing:.08em;font-size:.7rem">Admin Panel</small>
+    </div>
+
+    <nav class="flex-grow-1">
+      <ul class="list-unstyled mb-0">
+
+        <li>
+          <a href="{{ url_for('admin.dashboard') }}"
+             class="sidebar-link d-flex align-items-center gap-2 px-3 py-2 text-decoration-none
+                    {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+            <i class="bi bi-speedometer2 fs-5"></i>
+            <span>Dashboard</span>
+          </a>
+        </li>
+
+        <li class="mt-1">
+          <a href="{{ url_for('admin.vehicles') }}"
+             class="sidebar-link d-flex align-items-center gap-2 px-3 py-2 text-decoration-none
+                    {% if request.endpoint in ['admin.vehicles','admin.add_vehicle','admin.edit_vehicle'] %}active{% endif %}">
+            <i class="bi bi-truck fs-5"></i>
+            <span>Fleet / Vehicles</span>
+          </a>
+        </li>
+
+        <li class="mt-1">
+          <a href="{{ url_for('admin.add_vehicle') }}"
+             class="sidebar-link sidebar-sub d-flex align-items-center gap-2 px-3 py-2 text-decoration-none
+                    {% if request.endpoint == 'admin.add_vehicle' %}active{% endif %}">
+            <i class="bi bi-plus-circle fs-6"></i>
+            <span>Add New Vehicle</span>
+          </a>
+        </li>
+
+        <li class="mt-2">
+          <hr class="border-secondary mx-3 my-1" />
+        </li>
+
+        <li class="mt-1">
+          <a href="{{ url_for('admin.bookings') }}"
+             class="sidebar-link d-flex align-items-center gap-2 px-3 py-2 text-decoration-none
+                    {% if request.endpoint in ['admin.bookings','admin.booking_detail'] %}active{% endif %}">
+            <i class="bi bi-calendar-check fs-5"></i>
+            <span>Bookings</span>
+            {% set pending = namespace(count=0) %}
+          </a>
+        </li>
+
+        <li class="mt-1">
+          <a href="{{ url_for('admin.bookings', status='pending') }}"
+             class="sidebar-link sidebar-sub d-flex align-items-center gap-2 px-3 py-2 text-decoration-none">
+            <i class="bi bi-clock-history fs-6"></i>
+            <span>Pending Review</span>
+            {% if pending_count is defined and pending_count > 0 %}
+            <span class="badge bg-warning text-dark ms-auto">{{ pending_count }}</span>
+            {% endif %}
+          </a>
+        </li>
+
+        <li class="mt-2">
+          <hr class="border-secondary mx-3 my-1" />
+        </li>
+
+        <li class="mt-1">
+          <a href="{{ url_for('admin.users') }}"
+             class="sidebar-link d-flex align-items-center gap-2 px-3 py-2 text-decoration-none
+                    {% if request.endpoint == 'admin.users' %}active{% endif %}">
+            <i class="bi bi-people fs-5"></i>
+            <span>Users</span>
+          </a>
+        </li>
+
+        <li class="mt-2">
+          <hr class="border-secondary mx-3 my-1" />
+        </li>
+
+        <li class="mt-1">
+          <a href="{{ url_for('admin.reports') }}"
+             class="sidebar-link d-flex align-items-center gap-2 px-3 py-2 text-decoration-none
+                    {% if request.endpoint == 'admin.reports' %}active{% endif %}">
+            <i class="bi bi-bar-chart fs-5"></i>
+            <span>Reports</span>
+          </a>
+        </li>
+
+        <li class="mt-1">
+          <a href="{{ url_for('admin.export_bookings_csv') }}"
+             class="sidebar-link sidebar-sub d-flex align-items-center gap-2 px-3 py-2 text-decoration-none">
+            <i class="bi bi-download fs-6"></i>
+            <span>Export CSV</span>
+          </a>
+        </li>
+
+      </ul>
+    </nav>
+
+    <!-- Bottom links -->
+    <div class="px-3 pt-3 border-top border-secondary mt-3">
+      <a href="{{ url_for('main.index') }}"
+         class="sidebar-link d-flex align-items-center gap-2 px-0 py-2 text-decoration-none small">
+        <i class="bi bi-globe fs-6"></i>
+        <span>View Site</span>
+      </a>
+      <a href="{{ url_for('auth.logout') }}"
+         class="sidebar-link d-flex align-items-center gap-2 px-0 py-2 text-decoration-none small text-danger-emphasis">
+        <i class="bi bi-box-arrow-right fs-6"></i>
+        <span>Sign Out</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Page Content ─────────────────────────────────────────────────────────── -->
+  <div class="flex-grow-1 overflow-auto bg-light">
+    {% block admin_content %}{% endblock %}
+  </div>
+
+</div>
+{% endblock %}

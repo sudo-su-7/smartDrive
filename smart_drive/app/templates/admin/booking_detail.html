@@ -1,0 +1,139 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_content %}
+<div class="container py-4" style="max-width:800px">
+  <a href="{{ url_for('admin.bookings') }}" class="btn btn-outline-secondary btn-sm mb-4">
+    <i class="bi bi-arrow-left me-1"></i>Back to Bookings
+  </a>
+
+  <div class="row g-4">
+    <!-- Booking Info -->
+    <div class="col-lg-7">
+      <div class="card admin-card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <h5 class="fw-bold">Booking Details</h5>
+          <span class="badge status-{{ booking.status }} fs-6">{{ booking.status|title }}</span>
+        </div>
+
+        {% if vehicle %}
+        <div class="d-flex align-items-center gap-3 p-3 bg-light rounded-3 mb-3">
+          {% if vehicle.image %}
+          <img src="{{ url_for('static', filename='uploads/vehicles/' + vehicle.image) }}"
+               class="rounded-2" style="width:80px;height:60px;object-fit:cover" alt="{{ vehicle.name }}" />
+          {% else %}
+          <div class="vehicle-placeholder rounded-2" style="width:80px;height:60px;font-size:1.8rem">
+            <i class="bi bi-car-front"></i>
+          </div>
+          {% endif %}
+          <div>
+            <strong>{{ vehicle.name }}</strong><br>
+            <small class="text-muted">{{ vehicle.model }} &bull; {{ vehicle.plate_number }}</small>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="row g-2">
+          {% for label, value in [
+            ("Pick-up Date",  booking.start_date.strftime('%A, %d %B %Y')),
+            ("Return Date",   booking.end_date.strftime('%A, %d %B %Y')),
+            ("Duration",      (booking.days|string) + ' days'),
+            ("Rate/Day",      'KES {:,.0f}'.format(booking.price_per_day)),
+            ("Total Amount",  'KES {:,.0f}'.format(booking.total_amount)),
+            ("Payment",       booking.payment_status|title),
+            ("Submitted",     booking.created_at.strftime('%d %b %Y %H:%M')),
+          ] %}
+          <div class="col-6">
+            <small class="text-muted d-block">{{ label }}</small>
+            <strong class="small">{{ value }}</strong>
+          </div>
+          {% endfor %}
+        </div>
+
+        {% if booking.notes %}
+        <div class="mt-3 pt-3 border-top">
+          <small class="text-muted">Customer Notes</small>
+          <p class="mb-0 small">{{ booking.notes }}</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Customer Info -->
+      <div class="card admin-card p-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-person text-muted me-2"></i>Customer</h6>
+        {% if user %}
+        <div class="d-flex gap-3 align-items-center">
+          <div class="stat-icon bg-primary bg-opacity-10 text-primary" style="width:48px;height:48px">
+            {{ user.name[0]|upper }}
+          </div>
+          <div>
+            <strong>{{ user.name }}</strong><br>
+            <small class="text-muted">{{ user.email }}</small><br>
+            <small class="text-muted">{{ user.phone or 'No phone' }}</small>
+          </div>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">User not found</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Action Panel -->
+    <div class="col-lg-5">
+      {% if booking.status == 'pending' %}
+      <div class="card admin-card p-4 border-warning">
+        <h6 class="fw-bold mb-3 text-warning">
+          <i class="bi bi-exclamation-triangle me-2"></i>Review Required
+        </h6>
+
+        <form method="POST" action="{{ url_for('admin.booking_detail', booking_id=booking._id) }}" novalidate>
+          {{ form.hidden_tag() }}
+
+          <div class="mb-3">
+            {{ form.action.label(class="form-label fw-semibold") }}
+            {{ form.action(class="form-select") }}
+          </div>
+
+          <div class="mb-3">
+            {{ form.admin_notes.label(class="form-label fw-semibold") }}
+            {{ form.admin_notes(class="form-control", rows=3,
+                                placeholder="Optional note to the customer…") }}
+          </div>
+
+          {{ form.submit(class="btn btn-primary w-100") }}
+        </form>
+      </div>
+      {% else %}
+      <div class="card admin-card p-4">
+        <h6 class="fw-bold mb-3">Review Outcome</h6>
+        <span class="badge status-{{ booking.status }} fs-6 mb-3">{{ booking.status|title }}</span>
+
+        {% if booking.admin_notes %}
+        <div class="bg-light rounded p-3 mb-3">
+          <small class="text-muted d-block mb-1">Admin Notes</small>
+          <p class="mb-0 small">{{ booking.admin_notes }}</p>
+        </div>
+        {% endif %}
+
+        {% if booking.reviewed_at %}
+        <small class="text-muted">
+          Reviewed: {{ booking.reviewed_at.strftime('%d %b %Y %H:%M') }}
+        </small>
+        {% endif %}
+
+        {% if booking.status == 'approved' %}
+        <hr class="my-3" />
+        <p class="small text-muted mb-2">Has the customer returned the vehicle?</p>
+        <form method="POST" action="{{ url_for('admin.complete_booking', booking_id=booking._id) }}"
+              onsubmit="return confirm('Mark this booking as completed (vehicle returned)?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <button class="btn btn-success w-100">
+            <i class="bi bi-check2-circle me-2"></i>Mark as Completed
+          </button>
+        </form>
+        {% endif %}
+
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

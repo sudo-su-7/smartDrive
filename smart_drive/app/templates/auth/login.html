@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="auth-wrapper">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-5 col-lg-4">
+        <div class="auth-card card p-4">
+          <div class="text-center mb-4">
+            <i class="bi bi-car-front-fill text-primary display-5"></i>
+            <h2 class="fw-bold mt-2 mb-0">Welcome Back</h2>
+            <p class="text-muted small">Sign in to your account</p>
+          </div>
+
+          <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div class="mb-3">
+              {{ form.email.label(class="form-label fw-semibold") }}
+              {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""),
+                            placeholder="you@example.com", autocomplete="email") }}
+              {% for e in form.email.errors %}
+              <div class="invalid-feedback">{{ e }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="mb-3">
+              {{ form.password.label(class="form-label fw-semibold") }}
+              <div class="input-group">
+                {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""),
+                                 id="loginPassword", autocomplete="current-password") }}
+                <button class="btn btn-outline-secondary" type="button"
+                        onclick="togglePw('loginPassword', this)">
+                  <i class="bi bi-eye"></i>
+                </button>
+                {% for e in form.password.errors %}
+                <div class="invalid-feedback">{{ e }}</div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="mb-4 d-flex align-items-center">
+              {{ form.remember(class="form-check-input me-2") }}
+              {{ form.remember.label(class="form-check-label small") }}
+            </div>
+
+            <div class="d-grid">
+              {{ form.submit(class="btn btn-primary btn-lg") }}
+            </div>
+          </form>
+
+          <hr class="my-4" />
+          <p class="text-center mb-0 small">
+            Don't have an account?
+            <a href="{{ url_for('auth.register') }}" class="fw-semibold">Register here</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function togglePw(id, btn) {
+  const el = document.getElementById(id);
+  const isText = el.type === "text";
+  el.type = isText ? "password" : "text";
+  btn.innerHTML = isText ? '<i class="bi bi-eye"></i>' : '<i class="bi bi-eye-slash"></i>';
+}
+</script>
+{% endblock %}

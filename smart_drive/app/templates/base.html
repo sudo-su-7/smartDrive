@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>{% block title %}{{ title }} — SMART DRIVE{% endblock %}</title>
+
+  <!-- Bootstrap 5.3 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+        crossorigin="anonymous" />
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- ── Navbar ──────────────────────────────────────────────────────────────── -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm sticky-top">
+  <div class="container">
+    <a class="navbar-brand fw-bold fs-4" href="{{ url_for('main.index') }}">
+      <i class="bi bi-car-front-fill me-1"></i>SMART DRIVE
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#navbarMain" aria-controls="navbarMain"
+            aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarMain">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'main.index' %}active{% endif %}"
+             href="{{ url_for('main.index') }}">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'main.vehicles' %}active{% endif %}"
+             href="{{ url_for('main.vehicles') }}">Vehicles</a>
+        </li>
+        {% if current_user.is_authenticated and current_user.is_admin() %}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+            Admin
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}">
+              <i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('admin.vehicles') }}">
+              <i class="bi bi-truck me-2"></i>Vehicles</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('admin.bookings') }}">
+              <i class="bi bi-calendar-check me-2"></i>Bookings</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('admin.users') }}">
+              <i class="bi bi-people me-2"></i>Users</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('admin.reports') }}">
+              <i class="bi bi-bar-chart me-2"></i>Reports</a></li>
+          </ul>
+        </li>
+        {% endif %}
+      </ul>
+
+      <ul class="navbar-nav ms-auto align-items-center">
+        {% if current_user.is_authenticated %}
+          <!-- Notification bell -->
+          <li class="nav-item me-2">
+            <a class="nav-link position-relative" href="{{ url_for('user.notifications') }}">
+              <i class="bi bi-bell fs-5"></i>
+              {% if unread_notifications > 0 %}
+              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.6rem">
+                {{ unread_notifications }}
+              </span>
+              {% endif %}
+            </a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle d-flex align-items-center gap-1" href="#"
+               role="button" data-bs-toggle="dropdown">
+              <span class="avatar-circle">{{ current_user.name[0]|upper }}</span>
+              <span class="d-none d-lg-inline">{{ current_user.name.split()[0] }}</span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><h6 class="dropdown-header">{{ current_user.email }}</h6></li>
+              <li><hr class="dropdown-divider"></li>
+              {% if not current_user.is_admin() %}
+              <li><a class="dropdown-item" href="{{ url_for('user.dashboard') }}">
+                <i class="bi bi-grid me-2"></i>My Dashboard</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('user.bookings') }}">
+                <i class="bi bi-calendar me-2"></i>My Bookings</a></li>
+              {% endif %}
+              <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                <i class="bi bi-person me-2"></i>Profile</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('auth.change_password') }}">
+                <i class="bi bi-key me-2"></i>Change Password</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+                <i class="bi bi-box-arrow-right me-2"></i>Sign Out</a></li>
+            </ul>
+          </li>
+        {% else %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('auth.login') }}">Sign In</a>
+          </li>
+          <li class="nav-item">
+            <a class="btn btn-outline-light btn-sm ms-2" href="{{ url_for('auth.register') }}">
+              Register
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Flash Messages ──────────────────────────────────────────────────────── -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="container mt-3" id="flash-messages">
+    {% for category, message in messages %}
+    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+      <i class="bi bi-{% if category == 'success' %}check-circle{% elif category == 'danger' %}exclamation-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+<!-- ── Main Content ──────────────────────────────────────────────────────── -->
+<main class="py-4">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ── Footer ─────────────────────────────────────────────────────────────── -->
+<footer class="footer bg-dark text-white py-5 mt-auto">
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-md-4">
+        <h5 class="fw-bold mb-3"><i class="bi bi-car-front-fill me-2"></i>SMART DRIVE</h5>
+        <p class="text-white-50 small">A centralized platform for intelligent vehicle resource allocation and fleet management.</p>
+      </div>
+      <div class="col-md-2">
+        <h6 class="fw-semibold mb-3">Quick Links</h6>
+        <ul class="list-unstyled small">
+          <li><a class="text-white-50 text-decoration-none" href="{{ url_for('main.index') }}">Home</a></li>
+          <li><a class="text-white-50 text-decoration-none" href="{{ url_for('main.vehicles') }}">Vehicles</a></li>
+          {% if not current_user.is_authenticated %}
+          <li><a class="text-white-50 text-decoration-none" href="{{ url_for('auth.register') }}">Register</a></li>
+          {% endif %}
+        </ul>
+      </div>
+      <div class="col-md-3">
+        <h6 class="fw-semibold mb-3">Contact</h6>
+        <ul class="list-unstyled small text-white-50">
+          <li><i class="bi bi-envelope me-2"></i><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2a43444c456a59474b585e4e58435c4f04494504414f">[email&#160;protected]</a></li>
+          <li><i class="bi bi-telephone me-2"></i>+254 700 000 000</li>
+          <li><i class="bi bi-geo-alt me-2"></i>Nairobi, Kenya</li>
+        </ul>
+      </div>
+      <div class="col-md-3">
+        <h6 class="fw-semibold mb-3">Follow Us</h6>
+        <div class="d-flex gap-3 fs-5">
+          <a href="#" class="text-white-50"><i class="bi bi-twitter-x"></i></a>
+          <a href="#" class="text-white-50"><i class="bi bi-facebook"></i></a>
+          <a href="#" class="text-white-50"><i class="bi bi-instagram"></i></a>
+          <a href="#" class="text-white-50"><i class="bi bi-linkedin"></i></a>
+        </div>
+      </div>
+    </div>
+    <hr class="border-secondary mt-4" />
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center small text-white-50">
+      <span>&copy; {{ 2025 }} SMART DRIVE. All rights reserved.</span>
+      <span>Built with Flask &amp; Bootstrap 5</span>
+    </div>
+  </div>
+</footer>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmX

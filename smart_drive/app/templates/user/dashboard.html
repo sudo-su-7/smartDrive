@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">My Dashboard</h2>
+      <p class="text-muted mb-0">Welcome back, {{ current_user.name.split()[0] }}!</p>
+    </div>
+    <a href="{{ url_for('main.vehicles') }}" class="btn btn-primary">
+      <i class="bi bi-plus-lg me-1"></i>Book Vehicle
+    </a>
+  </div>
+
+  <!-- Stats -->
+  <div class="row g-3 mb-4">
+    {% for icon, label, value, colour in [
+      ("calendar-check", "Total Bookings", total_bookings, "primary"),
+      ("currency-exchange", "Total Spent (KES)", '{:,.0f}'.format(total_spent), "success"),
+      ("bell", "Notifications", unread_notifications, "warning"),
+    ] %}
+    <div class="col-sm-6 col-lg-4">
+      <div class="stat-card card p-4">
+        <div class="d-flex align-items-center">
+          <div class="stat-icon bg-{{ colour }} bg-opacity-10 text-{{ colour }} me-3">
+            <i class="bi bi-{{ icon }}"></i>
+          </div>
+          <div>
+            <div class="fs-4 fw-bold">{{ value }}</div>
+            <small class="text-muted">{{ label }}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="row g-4">
+    <!-- Active Bookings -->
+    <div class="col-lg-7">
+      <div class="card admin-card">
+        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
+          <h6 class="fw-bold mb-0"><i class="bi bi-calendar-check text-primary me-2"></i>Active Bookings</h6>
+          <a href="{{ url_for('user.bookings') }}" class="btn btn-sm btn-outline-primary">View All</a>
+        </div>
+        <div class="card-body p-0">
+          {% if active_bookings %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Vehicle</th>
+                  <th>Dates</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for b in active_bookings %}
+                <tr>
+                  <td>
+                    <strong>{{ b.vehicle.name if b.vehicle else 'N/A' }}</strong><br>
+                    <small class="text-muted">{{ b.vehicle.model if b.vehicle else '' }}</small>
+                  </td>
+                  <td class="small">
+                    {{ b.start_date.strftime('%d %b') }} – {{ b.end_date.strftime('%d %b %Y') }}
+                  </td>
+                  <td><strong>KES {{ '{:,.0f}'.format(b.total_amount) }}</strong></td>
+                  <td>
+                    <span class="badge status-{{ b.status }}">{{ b.status|title }}</span>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-calendar-x fs-1"></i>
+            <p class="mt-2 mb-0">No active bookings</p>
+            <a href="{{ url_for('main.vehicles') }}" class="btn btn-sm btn-primary mt-2">Browse Vehicles</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="col-lg-5">
+      <div class="card admin-card mb-3">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3">Quick Actions</h6>
+          <div class="d-grid gap-2">
+            <a href="{{ url_for('main.vehicles') }}" class="btn btn-outline-primary text-start">
+              <i class="bi bi-car-front me-2"></i>Browse Available Vehicles
+            </a>
+            <a href="{{ url_for('user.bookings') }}" class="btn btn-outline-secondary text-start">
+              <i class="bi bi-list-ul me-2"></i>View All Bookings
+            </a>
+            <a href="{{ url_for('user.notifications') }}" class="btn btn-outline-warning text-start">
+              <i class="bi bi-bell me-2"></i>Notifications
+              {% if unread_notifications > 0 %}
+              <span class="badge bg-danger ms-1">{{ unread_notifications }}</span>
+              {% endif %}
+            </a>
+            <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-info text-start">
+              <i class="bi bi-person me-2"></i>Edit Profile
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent History -->
+      <div class="card admin-card">
+        <div class="card-header bg-white border-0 py-3">
+          <h6 class="fw-bold mb-0"><i class="bi bi-clock-history text-muted me-2"></i>Recent History</h6>
+        </div>
+        <ul class="list-group list-group-flush">
+          {% for b in recent_bookings %}
+          <li class="list-group-item d-flex justify-content-between align-items-center px-3 py-2">
+            <div>
+              <strong class="small">{{ b.vehicle.name if b.vehicle else 'N/A' }}</strong><br>
+              <small class="text-muted">{{ b.created_at.strftime('%d %b %Y') }}</small>
+            </div>
+            <span class="badge status-{{ b.status }}">{{ b.status|title }}</span>
+          </li>
+          {% else %}
+          <li class="list-group-item text-center text-muted py-3">No history yet</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

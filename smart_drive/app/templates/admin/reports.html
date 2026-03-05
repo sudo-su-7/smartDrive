@@ -1,0 +1,103 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid py-4 px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0">Reports &amp; Analytics</h3>
+    <a href="{{ url_for('admin.export_bookings_csv') }}" class="btn btn-success btn-sm">
+      <i class="bi bi-download me-1"></i>Export Bookings CSV
+    </a>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card admin-card p-4">
+        <h6 class="fw-bold mb-4"><i class="bi bi-graph-up-arrow text-success me-2"></i>Monthly Revenue</h6>
+        <div class="chart-container"><canvas id="revenueChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card admin-card p-4">
+        <h6 class="fw-bold mb-4"><i class="bi bi-pie-chart text-primary me-2"></i>Booking Status</h6>
+        <div class="chart-container"><canvas id="statusChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="card admin-card p-4">
+        <h6 class="fw-bold mb-4"><i class="bi bi-trophy text-warning me-2"></i>Top Performing Vehicles</h6>
+        {% if top_vehicles %}
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead class="table-light">
+              <tr><th>#</th><th>Vehicle</th><th>Total Bookings</th><th>Revenue (KES)</th></tr>
+            </thead>
+            <tbody>
+              {% for tv in top_vehicles %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td>
+                  {% if tv.vehicle %}
+                  <strong>{{ tv.vehicle.name }}</strong>
+                  <small class="text-muted ms-2">{{ tv.vehicle.plate_number }}</small>
+                  {% else %}Unknown{% endif %}
+                </td>
+                <td>{{ tv.count }}</td>
+                <td><strong>KES {{ '{:,.0f}'.format(tv.revenue) }}</strong></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No booking data available yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% block admin_extra_scripts %}
+<script>
+const revenueData = {{ monthly_revenue | tojson }};
+const monthNames  = ["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const rlabels     = revenueData.map(m => monthNames[m._id.month] + " " + m._id.year);
+
+new Chart(document.getElementById("revenueChart"), {
+  type: "line",
+  data: {
+    labels: rlabels,
+    datasets: [
+      { label: "Revenue (KES)", data: revenueData.map(m => m.revenue), borderColor: "#198754",
+        backgroundColor: "rgba(25,135,84,.15)", tension: 0.4, fill: true, yAxisID: "y" },
+      { label: "Bookings", data: revenueData.map(m => m.count), borderColor: "#0d6efd",
+        backgroundColor: "transparent", tension: 0.4, borderDash: [5,5], yAxisID: "y1" },
+    ],
+  },
+  options: { responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: "top" } },
+    scales: {
+      y:  { beginAtZero: true, title: { display: true, text: "KES" } },
+      y1: { beginAtZero: true, position: "right", grid: { drawOnChartArea: false }, title: { display: true, text: "Bookings" } },
+    } },
+});
+
+const statusData = {{ status_dist | tojson }};
+const colMap = { pending:"#ffc107", approved:"#198754", rejected:"#dc3545", cancelled:"#6c757d", completed:"#0d6efd" };
+
+new Chart(document.getElementById("statusChart"), {
+  type: "doughnut",
+  data: {
+    labels: statusData.map(s => s._id.charAt(0).toUpperCase() + s._id.slice(1)),
+    datasets: [{ data: statusData.map(s => s.count),
+      backgroundColor: statusData.map(s => colMap[s._id] || "#adb5bd"), hoverOffset: 4 }],
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } },
+});
+</script>
+{% endblock %}
+{% endblock %}

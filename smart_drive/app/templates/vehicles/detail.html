@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('main.vehicles') }}">Vehicles</a></li>
+      <li class="breadcrumb-item active">{{ vehicle.name }}</li>
+    </ol>
+  </nav>
+
+  <div class="row g-4">
+    <!-- Image -->
+    <div class="col-lg-7">
+      {% if vehicle.image %}
+      <img src="{{ url_for('static', filename='uploads/vehicles/' + vehicle.image) }}"
+           class="img-fluid rounded-3 shadow-sm w-100" style="max-height:420px;object-fit:cover"
+           alt="{{ vehicle.name }}" />
+      {% else %}
+      <div class="vehicle-placeholder rounded-3" style="height:420px;font-size:6rem">
+        <i class="bi bi-car-front"></i>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Info -->
+    <div class="col-lg-5">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <h2 class="fw-bold mb-0">{{ vehicle.name }}</h2>
+        <span class="badge status-{{ vehicle.status }} fs-6">{{ vehicle.status|title }}</span>
+      </div>
+      <p class="text-muted mb-4">{{ vehicle.model }} &bull; {{ vehicle.plate_number }}</p>
+
+      <div class="row g-3 mb-4">
+        {% for icon, label, value in [
+          ("fuel-pump", "Fuel", vehicle.fuel_type|title),
+          ("gear", "Transmission", vehicle.transmission|title),
+          ("people", "Capacity", vehicle.capacity|string + " seats"),
+        ] %}
+        <div class="col-4 text-center">
+          <div class="p-3 bg-light rounded-3">
+            <i class="bi bi-{{ icon }} fs-4 text-primary mb-1 d-block"></i>
+            <small class="text-muted d-block">{{ label }}</small>
+            <strong class="small">{{ value }}</strong>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if vehicle.description %}
+      <p class="text-muted mb-4">{{ vehicle.description }}</p>
+      {% endif %}
+
+      <div class="card border-0 bg-primary bg-opacity-10 p-3 mb-4 rounded-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <small class="text-muted">Rate per day</small>
+            <h3 class="fw-bold text-primary mb-0">KES {{ '{:,.0f}'.format(vehicle.price_per_day) }}</h3>
+          </div>
+          {% if vehicle.status == 'available' %}
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('user.book_vehicle', vehicle_id=vehicle._id) }}"
+               class="btn btn-primary btn-lg px-4">
+              <i class="bi bi-calendar-plus me-2"></i>Book Now
+            </a>
+            {% else %}
+            <a href="{{ url_for('auth.login', next=request.path) }}"
+               class="btn btn-primary btn-lg px-4">
+              Sign in to Book
+            </a>
+            {% endif %}
+          {% else %}
+          <button class="btn btn-secondary btn-lg" disabled>Not Available</button>
+          {% endif %}
+        </div>
+      </div>
+
+      <a href="{{ url_for('main.vehicles') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Back to Vehicles
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

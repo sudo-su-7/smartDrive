@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- ── Hero ──────────────────────────────────────────────────────────────── -->
+<section class="hero-section">
+  <div class="container text-center position-relative">
+    <h1 class="display-4 fw-bold mb-3">Drive Smarter, Not Harder</h1>
+    <p class="lead text-white-75 mb-4 mx-auto" style="max-width:560px">
+      Book a vehicle in minutes. SMART DRIVE delivers seamless fleet management with real-time availability.
+    </p>
+    <div class="d-flex justify-content-center gap-3 flex-wrap">
+      <a href="{{ url_for('main.vehicles') }}" class="btn btn-warning btn-lg fw-semibold px-4">
+        <i class="bi bi-search me-2"></i>Browse Vehicles
+      </a>
+      {% if not current_user.is_authenticated %}
+      <a href="{{ url_for('auth.register') }}" class="btn btn-outline-light btn-lg px-4">
+        <i class="bi bi-person-plus me-2"></i>Get Started
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- ── Stats Bar ──────────────────────────────────────────────────────────── -->
+<section class="bg-white border-bottom py-4">
+  <div class="container">
+    <div class="row g-3 text-center">
+      <div class="col-4">
+        <h2 class="fw-bold text-primary mb-0">{{ stats.total_vehicles }}+</h2>
+        <small class="text-muted">Vehicles</small>
+      </div>
+      <div class="col-4 border-start border-end">
+        <h2 class="fw-bold text-success mb-0">{{ stats.available_vehicles }}</h2>
+        <small class="text-muted">Available Now</small>
+      </div>
+      <div class="col-4">
+        <h2 class="fw-bold text-warning mb-0">{{ stats.total_bookings }}+</h2>
+        <small class="text-muted">Bookings Made</small>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Featured Vehicles ──────────────────────────────────────────────────── -->
+<section class="py-5">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h2 class="fw-bold mb-1">Featured Vehicles</h2>
+        <p class="text-muted mb-0">Handpicked fleet available for immediate booking</p>
+      </div>
+      <a href="{{ url_for('main.vehicles') }}" class="btn btn-outline-primary">
+        View All <i class="bi bi-arrow-right ms-1"></i>
+      </a>
+    </div>
+
+    {% if vehicles %}
+    <div class="row g-4">
+      {% for vehicle in vehicles %}
+      <div class="col-sm-6 col-lg-4">
+        <div class="card vehicle-card h-100">
+          {% if vehicle.image %}
+          <img src="{{ url_for('static', filename='uploads/vehicles/' + vehicle.image) }}"
+               class="card-img-top" alt="{{ vehicle.name }}" />
+          {% else %}
+          <div class="vehicle-placeholder">
+            <i class="bi bi-car-front"></i>
+          </div>
+          {% endif %}
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <h5 class="card-title fw-bold mb-0">{{ vehicle.name }}</h5>
+              <span class="badge status-{{ vehicle.status }} badge-status">{{ vehicle.status|title }}</span>
+            </div>
+            <p class="text-muted small mb-2">{{ vehicle.model }}</p>
+            <div class="d-flex gap-3 small text-muted mb-3">
+              <span><i class="bi bi-fuel-pump me-1"></i>{{ vehicle.fuel_type|title }}</span>
+              <span><i class="bi bi-gear me-1"></i>{{ vehicle.transmission|title }}</span>
+              <span><i class="bi bi-people me-1"></i>{{ vehicle.capacity }}</span>
+            </div>
+            <div class="mt-auto d-flex justify-content-between align-items-center">
+              <div>
+                <span class="fs-5 fw-bold text-primary">KES {{ '{:,.0f}'.format(vehicle.price_per_day) }}</span>
+                <small class="text-muted">/day</small>
+              </div>
+              <div class="d-flex gap-2">
+                <a href="{{ url_for('main.vehicle_detail', vehicle_id=vehicle._id) }}"
+                   class="btn btn-outline-secondary btn-sm">Details</a>
+                {% if current_user.is_authenticated and vehicle.status == 'available' %}
+                <a href="{{ url_for('user.book_vehicle', vehicle_id=vehicle._id) }}"
+                   class="btn btn-primary btn-sm">Book</a>
+                {% elif not current_user.is_authenticated %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-sm">Book</a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+      <i class="bi bi-car-front display-1 text-muted"></i>
+      <p class="text-muted mt-3">No vehicles available at the moment.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- ── How It Works ───────────────────────────────────────────────────────── -->
+<section class="bg-white py-5">
+  <div class="container">
+    <h2 class="fw-bold text-center mb-5">How It Works</h2>
+    <div class="row g-4 text-center">
+      {% for step in [
+        ("1", "bi-person-plus", "primary", "Create Account", "Register securely in under 2 minutes."),
+        ("2", "bi-search",     "success", "Browse Fleet",   "Filter vehicles by type, price, and availability."),
+        ("3", "bi-calendar-check", "warning", "Book Online", "Select your dates and submit a booking request."),
+        ("4", "bi-check-circle", "info",   "Get Approved",  "Admin reviews and confirms your booking with a notification."),
+      ] %}
+      <div class="col-sm-6 col-lg-3">
+        <div class="p-4">
+          <div class="stat-icon bg-{{ step[2] }} bg-opacity-10 text-{{ step[2] }} mx-auto mb-3">
+            <i class="bi {{ step[1] }}"></i>
+          </div>
+          <h5 class="fw-bold">{{ step[3] }}</h5>
+          <p class="text-muted small mb-0">{{ step[4] }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,268 @@
+/* ═══════════════════════════════════════════════════════════════
+   SMART DRIVE — Custom Stylesheet
+   Bootstrap 5 + custom overrides
+═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --sd-primary: #0d6efd;
+  --sd-primary-dark: #0a58ca;
+  --sd-accent: #ffc107;
+  --sd-gradient: linear-gradient(135deg, #0d6efd 0%, #0a58ca 60%, #084298 100%);
+  --sd-card-shadow: 0 4px 20px rgba(0,0,0,.08);
+  --sd-radius: 0.75rem;
+}
+
+/* ── Global ──────────────────────────────────────────────────── */
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background-color: #f8f9fa;
+}
+
+main { flex: 1; }
+
+a { transition: color .2s; }
+
+/* ── Avatar circle ───────────────────────────────────────────── */
+.avatar-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.25);
+  font-weight: 700;
+  font-size: .85rem;
+  color: #fff;
+}
+
+/* ── Hero Section ────────────────────────────────────────────── */
+.hero-section {
+  background: var(--sd-gradient);
+  color: #fff;
+  padding: 5rem 0 4rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ── Stat Cards ──────────────────────────────────────────────── */
+.stat-card {
+  background: #fff;
+  border: none;
+  border-radius: var(--sd-radius);
+  box-shadow: var(--sd-card-shadow);
+  transition: transform .2s, box-shadow .2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(0,0,0,.12);
+}
+
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+/* ── Vehicle Cards ───────────────────────────────────────────── */
+.vehicle-card {
+  border: none;
+  border-radius: var(--sd-radius);
+  box-shadow: var(--sd-card-shadow);
+  transition: transform .25s, box-shadow .25s;
+  overflow: hidden;
+}
+
+.vehicle-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 35px rgba(0,0,0,.15);
+}
+
+.vehicle-card .card-img-top {
+  height: 200px;
+  object-fit: cover;
+  background: linear-gradient(135deg, #e9ecef, #dee2e6);
+}
+
+.vehicle-placeholder {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #e9ecef, #dee2e6);
+  font-size: 4rem;
+  color: #adb5bd;
+}
+
+.badge-status {
+  font-size: 0.72rem;
+  padding: .35em .65em;
+}
+
+/* ── Forms ───────────────────────────────────────────────────── */
+.auth-wrapper {
+  min-height: calc(100vh - 140px);
+  display: flex;
+  align-items: center;
+}
+
+.auth-card {
+  border: none;
+  border-radius: var(--sd-radius);
+  box-shadow: 0 8px 40px rgba(0,0,0,.12);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--sd-primary);
+  box-shadow: 0 0 0 .2rem rgba(13,110,253,.2);
+}
+
+/* ── Tables ──────────────────────────────────────────────────── */
+.table-hover tbody tr:hover {
+  background-color: rgba(13,110,253,.04);
+}
+
+/* ── Admin sidebar-style nav ─────────────────────────────────── */
+.admin-card {
+  border: none;
+  border-radius: var(--sd-radius);
+  box-shadow: var(--sd-card-shadow);
+}
+
+/* ── Status badge colours ────────────────────────────────────── */
+.status-pending    { background-color: #ffc107; color: #000; }
+.status-approved   { background-color: #198754; color: #fff; }
+.status-rejected   { background-color: #dc3545; color: #fff; }
+.status-cancelled  { background-color: #6c757d; color: #fff; }
+.status-completed  { background-color: #0d6efd; color: #fff; }
+.status-available  { background-color: #198754; color: #fff; }
+.status-booked     { background-color: #dc3545; color: #fff; }
+.status-maintenance{ background-color: #fd7e14; color: #fff; }
+
+/* ── Pagination ──────────────────────────────────────────────── */
+.page-link {
+  color: var(--sd-primary);
+  border-radius: 6px !important;
+  margin: 0 2px;
+}
+
+.page-item.active .page-link {
+  background-color: var(--sd-primary);
+  border-color: var(--sd-primary);
+}
+
+/* ── Notifications ───────────────────────────────────────────── */
+.notification-item {
+  border-left: 3px solid transparent;
+  transition: border-color .2s, background-color .2s;
+}
+
+.notification-item.unread {
+  border-left-color: var(--sd-primary);
+  background-color: rgba(13,110,253,.04);
+}
+
+/* ── Breadcrumb ──────────────────────────────────────────────── */
+.breadcrumb-section {
+  background: #fff;
+  border-bottom: 1px solid #dee2e6;
+  padding: .75rem 0;
+}
+
+/* ── Filter sidebar ──────────────────────────────────────────── */
+.filter-card {
+  border: none;
+  border-radius: var(--sd-radius);
+  box-shadow: var(--sd-card-shadow);
+  position: sticky;
+  top: 80px;
+}
+
+/* ── Charts ──────────────────────────────────────────────────── */
+.chart-container {
+  position: relative;
+  height: 300px;
+}
+
+/* ── Loading spinner overlay ─────────────────────────────────── */
+#page-loader {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+}
+
+#page-loader.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ── Responsive tweaks ───────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hero-section { padding: 3rem 0 2.5rem; }
+  .vehicle-card .card-img-top { height: 160px; }
+}
+
+/* ── Admin Sidebar ───────────────────────────────────────────── */
+.admin-sidebar {
+  position: sticky;
+  top: 56px;          /* navbar height */
+  height: calc(100vh - 56px);
+  overflow-y: auto;
+  flex-shrink: 0;
+  scrollbar-width: thin;
+  scrollbar-color: #444 #212529;
+}
+
+.sidebar-link {
+  color: rgba(255,255,255,.65);
+  border-radius: 0;
+  font-size: .875rem;
+  transition: background .15s, color .15s, border-left .15s;
+  border-left: 3px solid transparent;
+}
+
+.sidebar-link:hover {
+  background: rgba(255,255,255,.07);
+  color: #fff;
+}
+
+.sidebar-link.active {
+  background: rgba(13,110,253,.25);
+  color: #fff;
+  border-left-color: #0d6efd;
+  font-weight: 600;
+}
+
+.sidebar-sub {
+  padding-left: 2.5rem !important;
+  font-size: .82rem !important;
+}
+
+@media (max-width: 768px) {
+  .admin-sidebar {
+    display: none !important;
+  }
+}

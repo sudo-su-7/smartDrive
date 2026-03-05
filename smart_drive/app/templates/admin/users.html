@@ -1,0 +1,101 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_content %}
+<div class="container-fluid py-4 px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0">Manage Users</h3>
+  </div>
+
+  <!-- Search -->
+  <form method="GET" action="{{ url_for('admin.users') }}" class="mb-4">
+    <div class="input-group" style="max-width:400px">
+      <input type="text" name="q" class="form-control" placeholder="Search name or email…"
+             value="{{ search }}">
+      <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
+      {% if search %}<a href="{{ url_for('admin.users') }}" class="btn btn-outline-secondary">Clear</a>{% endif %}
+    </div>
+  </form>
+
+  {% if users %}
+  <div class="card admin-card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Bookings</th>
+            <th>Status</th>
+            <th>Joined</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="avatar-circle bg-primary text-white" style="width:36px;height:36px;font-size:.85rem">
+                  {{ u.name[0]|upper }}
+                </div>
+                <strong>{{ u.name }}</strong>
+              </div>
+            </td>
+            <td>{{ u.email }}</td>
+            <td>{{ u.phone or '—' }}</td>
+            <td>{{ u.booking_count }}</td>
+            <td>
+              {% if u.get('is_active', True) %}
+              <span class="badge bg-success">Active</span>
+              {% else %}
+              <span class="badge bg-danger">Suspended</span>
+              {% endif %}
+            </td>
+            <td class="small text-muted">{{ u.created_at.strftime('%d %b %Y') if u.created_at else '—' }}</td>
+            <td>
+              <form method="POST" action="{{ url_for('admin.toggle_user_active', user_id=u._id) }}"
+                    class="d-inline"
+                    onsubmit="return confirm('Toggle account status for {{ u.name }}?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button class="btn btn-sm {{ 'btn-outline-danger' if u.get('is_active', True) else 'btn-outline-success' }}">
+                  {{ 'Suspend' if u.get('is_active', True) else 'Activate' }}
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if paginator.pages > 1 %}
+  <nav class="mt-4 d-flex justify-content-center">
+    <ul class="pagination pagination-sm">
+      <li class="page-item {% if not paginator.has_prev %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('admin.users', page=paginator.prev_num, q=search) }}">«</a>
+      </li>
+      {% for p in paginator.iter_pages() %}
+        {% if p %}
+        <li class="page-item {% if p == paginator.page %}active{% endif %}">
+          <a class="page-link" href="{{ url_for('admin.users', page=p, q=search) }}">{{ p }}</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% endif %}
+      {% endfor %}
+      <li class="page-item {% if not paginator.has_next %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('admin.users', page=paginator.next_num, q=search) }}">»</a>
+      </li>
+    </ul>
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <div class="text-center py-5">
+    <i class="bi bi-people display-1 text-muted"></i>
+    <h4 class="mt-3 text-muted">No users found</h4>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

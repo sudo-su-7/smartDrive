@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4" style="max-width:700px">
+  <a href="{{ url_for('user.bookings') }}" class="btn btn-outline-secondary btn-sm mb-4">
+    <i class="bi bi-arrow-left me-1"></i>Back to Bookings
+  </a>
+
+  <div class="card admin-card p-4">
+    <div class="d-flex justify-content-between align-items-start mb-4">
+      <h4 class="fw-bold mb-0">Booking #{{ booking._id|string|truncate(8,'') }}</h4>
+      <span class="badge status-{{ booking.status }} fs-6">{{ booking.status|title }}</span>
+    </div>
+
+    {% if vehicle %}
+    <div class="d-flex align-items-center gap-3 p-3 bg-light rounded-3 mb-4">
+      {% if vehicle.image %}
+      <img src="{{ url_for('static', filename='uploads/vehicles/' + vehicle.image) }}"
+           class="rounded-2" style="width:80px;height:60px;object-fit:cover" alt="{{ vehicle.name }}" />
+      {% else %}
+      <div class="vehicle-placeholder rounded-2" style="width:80px;height:60px;font-size:1.8rem">
+        <i class="bi bi-car-front"></i>
+      </div>
+      {% endif %}
+      <div>
+        <h6 class="fw-bold mb-0">{{ vehicle.name }}</h6>
+        <small class="text-muted">{{ vehicle.model }} &bull; {{ vehicle.plate_number }}</small>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="row g-3 mb-4">
+      {% for label, value in [
+        ("Pick-up Date", booking.start_date.strftime('%A, %d %B %Y')),
+        ("Return Date", booking.end_date.strftime('%A, %d %B %Y')),
+        ("Duration", booking.days|string + (' day' if booking.days == 1 else ' days')),
+        ("Rate / Day", 'KES {:,.0f}'.format(booking.price_per_day)),
+        ("Total Amount", 'KES {:,.0f}'.format(booking.total_amount)),
+        ("Payment", booking.payment_status|title),
+        ("Submitted", booking.created_at.strftime('%d %b %Y at %H:%M')),
+      ] %}
+      <div class="col-sm-6">
+        <small class="text-muted d-block">{{ label }}</small>
+        <strong>{{ value }}</strong>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if booking.notes %}
+    <div class="mb-4">
+      <small class="text-muted d-block">Notes</small>
+      <p class="mb-0">{{ booking.notes }}</p>
+    </div>
+    {% endif %}
+
+    {% if booking.admin_notes %}
+    <div class="alert alert-info mb-4">
+      <i class="bi bi-chat-left-text me-2"></i>
+      <strong>Admin Note:</strong> {{ booking.admin_notes }}
+    </div>
+    {% endif %}
+
+    {% if booking.status == 'pending' %}
+    <form method="POST" action="{{ url_for('user.cancel_booking', booking_id=booking._id) }}"
+          onsubmit="return confirm('Are you sure you want to cancel this booking?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <button class="btn btn-outline-danger">
+        <i class="bi bi-x-circle me-1"></i>Cancel Booking
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4" style="max-width:900px">
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a href="{{ url_for('main.vehicles') }}">Vehicles</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('main.vehicle_detail', vehicle_id=vehicle._id) }}">{{ vehicle.name }}</a></li>
+      <li class="breadcrumb-item active">Book</li>
+    </ol>
+  </nav>
+
+  <div class="row g-4">
+    <!-- Vehicle Summary -->
+    <div class="col-lg-5">
+      <div class="card admin-card sticky-top" style="top:80px">
+        {% if vehicle.image %}
+        <img src="{{ url_for('static', filename='uploads/vehicles/' + vehicle.image) }}"
+             class="card-img-top rounded-top-3" style="height:200px;object-fit:cover" alt="{{ vehicle.name }}" />
+        {% else %}
+        <div class="vehicle-placeholder rounded-top-3" style="height:180px;font-size:3rem">
+          <i class="bi bi-car-front"></i>
+        </div>
+        {% endif %}
+        <div class="card-body">
+          <h5 class="fw-bold">{{ vehicle.name }}</h5>
+          <p class="text-muted small mb-3">{{ vehicle.model }} &bull; {{ vehicle.plate_number }}</p>
+
+          <div class="d-flex gap-3 small mb-3">
+            <span><i class="bi bi-fuel-pump me-1"></i>{{ vehicle.fuel_type|title }}</span>
+            <span><i class="bi bi-gear me-1"></i>{{ vehicle.transmission|title }}</span>
+            <span><i class="bi bi-people me-1"></i>{{ vehicle.capacity }}</span>
+          </div>
+
+          <div class="border-top pt-3">
+            <div class="d-flex justify-content-between small mb-1">
+              <span class="text-muted">Rate</span>
+              <strong>KES {{ '{:,.0f}'.format(vehicle.price_per_day) }} / day</strong>
+            </div>
+            <div class="d-flex justify-content-between small mb-1">
+              <span class="text-muted">Duration</span>
+              <strong id="total-days">—</strong>
+            </div>
+            <div class="d-flex justify-content-between border-top pt-2 mt-2">
+              <strong>Total</strong>
+              <strong class="text-primary" id="total-amount">—</strong>
+            </div>
+          </div>
+        </div>
+        <!-- Hidden data for JS -->
+        <span id="price_per_day_data" data-price="{{ vehicle.price_per_day }}" class="d-none"></span>
+      </div>
+    </div>
+
+    <!-- Booking Form -->
+    <div class="col-lg-7">
+      <div class="card admin-card p-4">
+        <h4 class="fw-bold mb-4"><i class="bi bi-calendar-plus text-primary me-2"></i>Booking Details</h4>
+
+        <form method="POST" action="{{ url_for('user.book_vehicle', vehicle_id=vehicle._id) }}" novalidate>
+          {{ form.hidden_tag() }}
+
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              {{ form.start_date.label(class="form-label fw-semibold") }}
+              {{ form.start_date(class="form-control" + (" is-invalid" if form.start_date.errors else ""),
+                                 id="start_date") }}
+              {% for e in form.start_date.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="col-6">
+              {{ form.end_date.label(class="form-label fw-semibold") }}
+              {{ form.end_date(class="form-control" + (" is-invalid" if form.end_date.errors else ""),
+                               id="end_date") }}
+              {% for e in form.end_date.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+
+          <div class="mb-4">
+            {{ form.notes.label(class="form-label fw-semibold") }}
+            {{ form.notes(class="form-control" + (" is-invalid" if form.notes.errors else ""),
+                          rows=3, placeholder="Any special requirements or notes…") }}
+            {% for e in form.notes.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+          </div>
+
+          <div class="bg-light rounded-3 p-3 mb-4 small text-muted">
+            <i class="bi bi-info-circle me-2 text-primary"></i>
+            Your booking will be reviewed by an administrator. You'll receive a notification once approved.
+          </div>
+
+          <div class="d-grid">
+            {{ form.submit(class="btn btn-primary btn-lg fw-semibold") }}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
