@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<style>
+#pickupMap,#dropoffMap{height:240px;width:100%;border-radius:0 0 var(--r-md) var(--r-md)}
+.leaflet-container{border-radius:0 0 var(--r-md) var(--r-md)}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper" style="padding-top:2.5rem;padding-bottom:3rem">
+  <nav style="font-size:.8125rem;color:var(--text-secondary);margin-bottom:1.75rem">
+    <a href="{{ url_for('main.vehicles') }}" style="color:var(--text-secondary)">Vehicles</a>
+    <span style="margin:0 .5rem;color:var(--text-tertiary)">/</span>
+    <a href="{{ url_for('main.vehicle_detail', vehicle_id=vehicle._id) }}" style="color:var(--text-secondary)">{{ vehicle.name }}</a>
+    <span style="margin:0 .5rem;color:var(--text-tertiary)">/</span>
+    <span style="color:var(--text-primary)">Book</span>
+  </nav>
+
+  <div style="display:grid;grid-template-columns:1fr 340px;gap:2rem;align-items:start">
+
+    <!-- ── Booking form ── -->
+    <div class="card card-p-lg">
+      <h2 style="font-size:1.25rem;font-weight:800;letter-spacing:-.02em;color:var(--text-primary);margin:0 0 .35rem">
+        <i class="bi bi-calendar-plus" style="color:var(--c-brand-600);margin-right:.5rem"></i>Booking Details
+      </h2>
+      <p style="font-size:.875rem;color:var(--text-secondary);margin:0 0 1.75rem">Your request will be reviewed by our team before confirmation.</p>
+
+      <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+
+        <!-- Dates -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label" for="start_date">Pick-up Date <span class="required">*</span></label>
+            {{ form.start_date(id="start_date", class="form-control"~(" is-invalid" if form.start_date.errors else "")) }}
+            {% for e in form.start_date.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label" for="end_date">Return Date <span class="required">*</span></label>
+            {{ form.end_date(id="end_date", class="form-control"~(" is-invalid" if form.end_date.errors else "")) }}
+            {% for e in form.end_date.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <!-- Pickup map -->
+        <div class="form-group">
+          <label class="form-label">
+            <i class="bi bi-geo-alt-fill" style="color:var(--c-success-500);margin-right:.35rem"></i>
+            Pick-up Location
+            <span class="badge badge-blue" style="margin-left:.4rem;font-size:.65rem">Map</span>
+          </label>
+          {{ form.pickup_address(id="pickup_address_input", class="form-control", placeholder="Search address or click map…", style="border-radius:var(--r-md) var(--r-md) 0 0;border-bottom:none") }}
+          {{ form.pickup_lat(id="pickup_lat") }}
+          {{ form.pickup_lng(id="pickup_lng") }}
+          <div style="position:relative;border:1px solid var(--border);border-radius:0 0 var(--r-md) var(--r-md);overflow:hidden">
+            <div id="pickupMap"></div>
+            <button type="button" onclick="locateMe('pickup')" style="position:absolute;bottom:10px;right:10px;z-index:999;background:var(--c-brand-600);color:#fff;border:none;border-radius:var(--r-md);padding:.35rem .75rem;font-size:.78rem;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)">
+              <i class="bi bi-crosshair2"></i> My Location
+            </button>
+          </div>
+          <p class="form-hint">Click map or search to set your pickup point. Drag marker to adjust.</p>
+        </div>
+
+        <!-- Dropoff map -->
+        <div class="form-group">
+          <label class="form-label">
+            <i class="bi bi-geo-alt-fill" style="color:var(--c-danger-500);margin-right:.35rem"></i>
+            Drop-off Location
+            <span style="color:var(--text-tertiary);font-weight:400;font-size:.78rem">(optional — defaults to pickup)</span>
+          </label>
+          {{ form.dropoff_address(id="dropoff_address_input", class="form-control", placeholder="Search address or click map…", style="border-radius:var(--r-md) var(--r-md) 0 0;border-bottom:none") }}
+          {{ form.dropoff_lat(id="dropoff_lat") }}
+          {{ form.dropoff_lng(id="dropoff_lng") }}
+          <div style="position:relative;border:1px solid var(--border);border-radius:0 0 var(--r-md) var(--r-md);overflow:hidden">
+            <div id="dropoffMap"></div>
+            <button type="button" onclick="locateMe('dropoff')" style="position:absolute;bottom:10px;right:10px;z-index:999;background:var(--c-danger-500);color:#fff;border:none;border-radius:var(--r-md);padding:.35rem .75rem;font-size:.78rem;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)">
+              <i class="bi bi-crosshair2"></i> My Location
+            </button>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-group">
+          <label class="form-label" for="notes">Additional Notes</label>
+          {{ form.notes(id="notes", class="form-control", rows=3, placeholder="Special requirements, preferred driver, airport pickup details…") }}
+        </div>
+
+        <div class="alert alert-info" style="margin-bottom:1.5rem">
+          <i class="bi bi-shield-check"></i>
+          <span>Booking is reviewed before approval. Once approved, you'll receive an M-Pesa payment prompt.</span>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg">
+          <i class="bi bi-calendar-check"></i> Request Booking
+        </button>
+      </form>
+    </div>
+
+    <!-- ── Vehicle summary (sticky) ── -->
+    <div style="position:sticky;top:calc(var(--topbar-h)+1rem)">
+      <div class="card" style="overflow:hidden">
+        {% if vehicle.image %}
+        <img src="{{ url_for('static', filename='uploads/vehicles/' + vehicle.image) }}"
+             style="width:100%;height:180px;object-fit:cover" alt="{{ vehicle.name }}"/>
+        {% else %}
+        <div class="vehicle-placeholder" style="height:160px;font-size:3rem"><i class="bi bi-car-front"></i></div>
+        {% endif %}
+        <div class="card-p">
+          <div style="font-size:1rem;font-weight:800;color:var(--text-primary);margin-bottom:.2rem">{{ vehicle.name }}</div>
+          <div style="font-size:.8125rem;color:var(--text-secondary);margin-bottom:1rem">{{ vehicle.model }} · {{ vehicle.plate_number }}</div>
+
+          <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1.25rem">
+            <span class="spec-tag"><i class="bi bi-fuel-pump"></i>{{ vehicle.fuel_type|title }}</span>
+            <span class="spec-tag"><i class="bi bi-gear"></i>{{ vehicle.transmission|title }}</span>
+            <span class="spec-tag"><i class="bi bi-people"></i>{{ vehicle.capacity }} seats</span>
+          </div>
+
+          <!-- Cost calculator -->
+          <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-md);padding:1rem">
+            <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);margin-bottom:.75rem">Cost Estimate</div>
+            <div style="display:flex;justify-content:space-between;font-size:.8125rem;margin-bottom:.4rem">
+              <span style="color:var(--text-secondary)">Rate per day</span>
+              <span>KES {{ '{:,.0f}'.format(vehicle.price_per_day) }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:.8125rem;margin-bottom:.75rem">
+              <span style="color:var(--text-secondary)">Duration</span>
+              <span id="calc-days">—</span>
+            </div>
+            <div style="height:1px;background:var(--border);margin-bottom:.75rem"></div>
+            <div style="display:flex;justify-content:space-between;font-weight:700">
+              <span>Estimated Total</span>
+              <span style="color:var(--c-brand-600)" id="calc-total">—</span>
+            </div>
+          </div>
+          <span id="price_per_day_data" data-price="{{ vehicle.price_per_day }}" style="display:none"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+const NAIROBI = [-1.2921, 36.8219];
+
+function makeIcon(color) {
+  return L.divIcon({
+    html: `<div style="width:24px;height:24px;background:${color};border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3)"></div>`,
+    iconSize:[24,24], iconAnchor:[12,24], className:''
+  });
+}
+
+function initMap(mapId, latId, lngId, addrId, color) {
+  const map = L.map(mapId, {zoomControl:true}).setView(NAIROBI, 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(map);
+  let marker = null;
+
+  function place(lat, lng) {
+    if (marker) map.removeLayer(marker);
+    marker = L.marker([lat,lng],{icon:makeIcon(color),draggable:true}).addTo(map);
+    document.getElementById(latId).value = lat.toFixed(6);
+    document.getElementById(lngId).value = lng.toFixed(6);
+    marker.on('dragend', e => {
+      const p = e.target.getLatLng();
+      document.getElementById(latId).value = p.lat.toFixed(6);
+      document.getElementById(lngId).value = p.lng.toFixed(6);
+      reverseGeocode(p.lat, p.lng, addrId);
+    });
+    reverseGeocode(lat, lng, addrId);
+  }
+
+  map.on('click', e => place(e.latlng.lat, e.latlng.lng));
+
+  // Address search
+  const inp = document.getElementById(addrId);
+  let timer;
+  inp.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const q = inp.value.trim();
+      if (q.length < 3) return;
+      fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=ke&limit=1`)
+        .then(r => r.json()).then(d => {
+          if (d.length) { place(+d[0].lat, +d[0].lon); inp.value = d[0].display_name.substring(0,120); map.setView([+d[0].lat,+d[0].lon],15); }
+        });
+    }, 600);
+  });
+
+  return { map, place };
+}
+
+function reverseGeocode(lat,lng,addrId){
+  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+    .then(r=>r.json()).then(d=>{ if(d.display_name) document.getElementById(addrId).value=d.display_name.substring(0,120); }).catch(()=>{});
+}
+
+const pickup  = initMap('pickupMap',  'pickup_lat',  'pickup_lng',  'pickup_address_input',  '#2563eb');
+const dropoff = initMap('dropoffMap', 'dropoff_lat', 'dropoff_lng', 'dropoff_address_input', '#ef4444');
+
+function locateMe(which){
+  if(!navigator.geolocation){alert('Geolocation not supported.');return;}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const {latitude:lat,longitude:lng}=pos.coords;
+    if(which==='pickup'){pickup.place(lat,lng);pickup.map.setView([lat,lng],16);}
+    else{dropoff.place(lat,lng);dropoff.map.setView([lat,lng],16);}
+  },()=>alert('Unable to get your location.'));
+}
+</script>
+{% endblock %}

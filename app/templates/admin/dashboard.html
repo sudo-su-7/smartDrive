@@ -1,0 +1,94 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block admin_content %}
+<div style="padding:1.75rem var(--page-px) 2.5rem">
+  <div class="row-between" style="margin-bottom:1.75rem">
+    <div><h2 class="t-h2">Dashboard</h2><p style="color:var(--text-secondary);font-size:.875rem;margin:.2rem 0 0">Fleet overview & system stats</p></div>
+    <div style="display:flex;gap:.5rem">
+      <a href="{{ url_for('admin.add_vehicle') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add Vehicle</a>
+      <a href="{{ url_for('admin.reports') }}" class="btn btn-secondary btn-sm"><i class="bi bi-bar-chart"></i> Reports</a>
+    </div>
+  </div>
+
+  <!-- Stat cards -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.75rem">
+    {% for icon, si, val, label in [
+      ('truck','si-blue',stats.total_vehicles,'Total Vehicles'),
+      ('check-circle','si-green',stats.available_vehicles,'Available'),
+      ('calendar-check','si-purple',stats.total_bookings,'All Bookings'),
+      ('clock','si-amber',stats.pending_bookings,'Pending Review'),
+      ('people','si-blue',stats.total_users,'Customers'),
+      ('cash-coin','si-green','{:,.0f}'.format(stats.total_revenue),'Revenue (KES)'),
+    ] %}
+    <div class="stat-card">
+      <div class="stat-icon {{ si }}"><i class="bi bi-{{ icon }}"></i></div>
+      <div class="stat-value" style="font-size:1.5rem">{{ val }}</div>
+      <div class="stat-label">{{ label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 380px;gap:1.25rem">
+    <!-- Chart -->
+    <div class="card card-p">
+      <div class="card-header-title" style="margin-bottom:1.25rem"><i class="bi bi-graph-up" style="color:var(--c-brand-600)"></i> Monthly Booking Trend</div>
+      <div class="chart-wrap"><canvas id="monthlyChart"></canvas></div>
+    </div>
+
+    <!-- Recent bookings -->
+    <div class="card">
+      <div class="card-header-row">
+        <div class="card-header-title"><i class="bi bi-clock-history" style="color:var(--text-tertiary)"></i> Recent Bookings</div>
+        <a href="{{ url_for('admin.bookings') }}" class="btn btn-ghost btn-sm">All</a>
+      </div>
+      {% for b in recent_bookings %}
+      <a href="{{ url_for('admin.booking_detail', booking_id=b._id) }}"
+         style="display:flex;align-items:center;justify-content:space-between;padding:.875rem 1.25rem;border-bottom:1px solid var(--border);text-decoration:none;transition:background var(--t-fast)"
+         onmouseover="this.style.background='var(--bg-raised)'" onmouseout="this.style.background=''">
+        <div style="min-width:0">
+          <div style="font-size:.8125rem;font-weight:600;color:var(--text-primary)" class="truncate">{{ b.user.name if b.user else 'N/A' }}</div>
+          <div style="font-size:.75rem;color:var(--text-secondary)" class="truncate">{{ b.vehicle.name if b.vehicle else 'N/A' }}</div>
+        </div>
+        <span class="badge status-{{ b.status }}" style="margin-left:.75rem;flex-shrink:0">{{ b.status|title }}</span>
+      </a>
+      {% else %}
+      <div style="padding:2rem;text-align:center;color:var(--text-secondary);font-size:.875rem">No bookings yet</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block admin_extra_scripts %}
+<script>
+const md = {{ monthly|tojson }};
+const mn = ["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const labels  = md.map(m => mn[m._id.month]+" "+m._id.year);
+const isDark  = document.documentElement.getAttribute('data-theme')==='dark';
+const gridCol = isDark ? 'rgba(255,255,255,.06)' : '#f1f5f9';
+const txtCol  = isDark ? '#8b949e' : '#94a3b8';
+
+new Chart(document.getElementById("monthlyChart"),{
+  type:"bar",
+  data:{
+    labels,
+    datasets:[
+      {label:"Bookings",data:md.map(m=>m.count),backgroundColor:"rgba(37,99,235,.75)",borderRadius:6,yAxisID:"y"},
+      {label:"Revenue (KES)",data:md.map(m=>m.revenue),type:"line",borderColor:"#22c55e",backgroundColor:"rgba(34,197,94,.1)",tension:.4,fill:true,yAxisID:"y1"}
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    interaction:{mode:"index",intersect:false},
+    plugins:{legend:{position:"top",labels:{color:txtCol,font:{size:11}}}},
+    scales:{
+      y:{beginAtZero:true,grid:{color:gridCol},ticks:{color:txtCol},title:{display:true,text:"Bookings",color:txtCol}},
+      y1:{beginAtZero:true,position:"right",grid:{drawOnChartArea:false},ticks:{color:txtCol},title:{display:true,text:"Revenue (KES)",color:txtCol}}
+    }
+  }
+});
+</script>
+{% endblock %}

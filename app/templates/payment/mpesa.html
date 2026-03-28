@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="min-height:calc(100vh - 200px);display:grid;place-items:center;padding:2rem var(--page-px)">
+  <div class="mpesa-card">
+    <div class="mpesa-header">
+      <div class="mpesa-wordmark">M-PESA</div>
+      <p style="font-size:.8rem;opacity:.75;margin:.25rem 0 0">Secure Mobile Payment by Safaricom</p>
+      <div class="mpesa-amount-box">
+        <div class="mpesa-amount-label">Amount Due</div>
+        <div class="mpesa-amount">KES {{ '{:,.0f}'.format(booking.total_amount) }}</div>
+        <div style="font-size:.78rem;opacity:.7;margin-top:.25rem">{{ booking.days }} day{{ 's' if booking.days>1 else '' }}{% if vehicle %} · {{ vehicle.name }}{% endif %}</div>
+      </div>
+    </div>
+
+    <div class="mpesa-body">
+      <!-- Booking dates -->
+      <div class="booking-timeline" style="margin-bottom:1.25rem">
+        <div class="bt-date"><div class="bt-day">{{ booking.start_date.strftime('%d') }}</div><div class="bt-month">{{ booking.start_date.strftime('%b %Y') }}</div></div>
+        <div class="bt-arrow"><i class="bi bi-arrow-right" style="color:var(--text-tertiary)"></i></div>
+        <div class="bt-date"><div class="bt-day">{{ booking.end_date.strftime('%d') }}</div><div class="bt-month">{{ booking.end_date.strftime('%b %Y') }}</div></div>
+      </div>
+
+      <!-- Locations -->
+      {% if booking.pickup_location and booking.pickup_location.address %}
+      <div class="loc-chip" style="margin-bottom:.5rem;max-width:100%">
+        <i class="bi bi-geo-alt-fill" style="color:var(--c-success-500);flex-shrink:0"></i>
+        <span>{{ booking.pickup_location.address }}</span>
+      </div>
+      {% endif %}
+      {% if booking.dropoff_location and booking.dropoff_location.address %}
+      <div class="loc-chip" style="margin-bottom:1.25rem;max-width:100%">
+        <i class="bi bi-geo-alt-fill" style="color:var(--c-danger-500);flex-shrink:0"></i>
+        <span>{{ booking.dropoff_location.address }}</span>
+      </div>
+      {% endif %}
+
+      <div style="height:1px;background:var(--border);margin-bottom:1.5rem"></div>
+
+      <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+        <div class="form-group">
+          <label class="form-label">M-Pesa Phone Number <span class="required">*</span></label>
+          <div class="input-group">
+            <span class="input-group-text" style="gap:.4rem">
+              <img src="https://flagcdn.com/w20/ke.png" alt="KE" width="18" style="border-radius:2px"/> +254
+            </span>
+            {{ form.phone(class="form-control"~(" is-invalid" if form.phone.errors else ""), placeholder="0712 345 678") }}
+          </div>
+          {% for e in form.phone.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+          <p class="form-hint">Enter the M-Pesa registered number. You'll receive a PIN prompt immediately.</p>
+        </div>
+
+        <!-- How it works -->
+        <div style="background:rgba(0,166,81,.06);border:1px solid rgba(0,166,81,.2);border-radius:var(--r-md);padding:.875rem 1rem;margin-bottom:1.5rem">
+          <p style="font-size:.78rem;font-weight:700;color:var(--c-mpesa-700);margin:0 0 .625rem">How it works</p>
+          <ol style="margin:0;padding-left:1.2rem;font-size:.8125rem;color:var(--text-secondary);line-height:1.8">
+            <li>Enter your M-Pesa number and tap Pay</li>
+            <li>Check your phone for the STK Push prompt</li>
+            <li>Enter your M-Pesa PIN to confirm</li>
+            <li>Booking payment confirmed automatically ✅</li>
+          </ol>
+        </div>
+
+        <button type="submit" class="btn btn-mpesa btn-block btn-lg">
+          <i class="bi bi-phone-fill"></i> Pay KES {{ '{:,.0f}'.format(booking.total_amount) }} via M-Pesa
+        </button>
+      </form>
+
+      <div style="text-align:center;margin-top:1.25rem">
+        <a href="{{ url_for('user.booking_detail', booking_id=booking._id) }}" style="font-size:.8125rem;color:var(--text-secondary)">
+          <i class="bi bi-arrow-left" style="margin-right:.3rem"></i>Cancel and go back
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

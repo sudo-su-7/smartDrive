@@ -1,0 +1,71 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_content %}
+<div style="padding:1.75rem var(--page-px) 2.5rem">
+  <div class="row-between" style="margin-bottom:1.5rem">
+    <div><h2 class="t-h2">Manage Vehicles</h2></div>
+    <a href="{{ url_for('admin.add_vehicle') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add Vehicle</a>
+  </div>
+
+  <form method="GET" style="margin-bottom:1.5rem">
+    <div class="input-group" style="max-width:380px">
+      <input type="text" name="q" class="form-control" placeholder="Search name, model, plate…" value="{{ search }}"/>
+      <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
+    </div>
+  </form>
+
+  {% if vehicles %}
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table class="table">
+        <thead><tr><th>Vehicle</th><th>Plate</th><th>Fuel / Trans</th><th>Seats</th><th>Rate/Day</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for v in vehicles %}
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:.75rem">
+                {% if v.image %}
+                <img src="{{ url_for('static', filename='uploads/vehicles/' + v.image) }}"
+                     style="width:52px;height:38px;object-fit:cover;border-radius:var(--r-sm);flex-shrink:0" alt="{{ v.name }}"/>
+                {% else %}
+                <div style="width:52px;height:38px;background:var(--bg-raised);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);font-size:1.25rem;flex-shrink:0"><i class="bi bi-car-front"></i></div>
+                {% endif %}
+                <div>
+                  <div style="font-weight:600;font-size:.875rem">{{ v.name }}</div>
+                  <div style="font-size:.75rem;color:var(--text-secondary)">{{ v.model }}</div>
+                </div>
+              </div>
+            </td>
+            <td style="font-family:monospace;font-size:.8125rem;color:var(--text-secondary)">{{ v.plate_number }}</td>
+            <td style="font-size:.8125rem;color:var(--text-secondary)">{{ v.fuel_type|title }} / {{ v.transmission|title }}</td>
+            <td style="font-size:.875rem">{{ v.capacity }}</td>
+            <td style="font-weight:700;font-size:.875rem">KES {{ '{:,.0f}'.format(v.price_per_day) }}</td>
+            <td><span class="badge status-{{ v.status }}">{{ v.status|title }}</span></td>
+            <td>
+              <div style="display:flex;gap:.3rem">
+                <a href="{{ url_for('main.vehicle_detail', vehicle_id=v._id) }}" class="btn btn-ghost btn-sm" title="View"><i class="bi bi-eye"></i></a>
+                <a href="{{ url_for('admin.edit_vehicle', vehicle_id=v._id) }}" class="btn btn-ghost btn-sm" title="Edit"><i class="bi bi-pencil"></i></a>
+                <form method="POST" action="{{ url_for('admin.delete_vehicle', vehicle_id=v._id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                  <button class="btn btn-ghost btn-sm" style="color:var(--c-danger-500)" data-confirm="Delete {{ v.name }}?"><i class="bi bi-trash"></i></button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if paginator.pages > 1 %}
+  <div class="pagination" style="justify-content:center;margin-top:1.5rem">
+    <a class="page-btn {% if not paginator.has_prev %}disabled{% endif %}" href="?page={{ paginator.prev_num }}&q={{ search }}"><i class="bi bi-chevron-left"></i></a>
+    {% for p in paginator.iter_pages() %}{% if p %}<a class="page-btn {% if p==paginator.page %}active{% endif %}" href="?page={{ p }}&q={{ search }}">{{ p }}</a>{% else %}<span class="page-btn disabled">…</span>{% endif %}{% endfor %}
+    <a class="page-btn {% if not paginator.has_next %}disabled{% endif %}" href="?page={{ paginator.next_num }}&q={{ search }}"><i class="bi bi-chevron-right"></i></a>
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="empty-state"><i class="bi bi-truck"></i><h5>No vehicles found</h5><a href="{{ url_for('admin.add_vehicle') }}" class="btn btn-primary">Add First Vehicle</a></div>
+  {% endif %}
+</div>
+{% endblock %}

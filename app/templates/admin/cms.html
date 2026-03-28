@@ -1,0 +1,138 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_content %}
+<div style="padding:1.75rem var(--page-px) 2.5rem;max-width:900px">
+  <div style="margin-bottom:1.75rem">
+    <h2 class="t-h2">Site Content</h2>
+    <p style="color:var(--text-secondary);font-size:.875rem;margin:.2rem 0 0">
+      Edit the public-facing text, contact details, and call-to-action copy. Changes take effect immediately.
+    </p>
+  </div>
+
+  <form method="POST" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+    <!-- ── Hero Section ── -->
+    <div class="card card-p-lg" style="margin-bottom:1.25rem">
+      <h3 style="font-size:1rem;font-weight:700;color:var(--text-primary);margin:0 0 1.25rem;display:flex;align-items:center;gap:.5rem">
+        <i class="bi bi-stars" style="color:var(--c-brand-600)"></i> Hero Section
+      </h3>
+
+      <div class="form-group">
+        <label class="form-label">Hero Badge Text
+          <span style="color:var(--text-tertiary);font-weight:400"> — small pill above the heading</span>
+        </label>
+        <input type="text" name="hero_badge" class="form-control" maxlength="80"
+               value="{{ cms.hero_badge or '' }}" placeholder="e.g. Kenya's #1 Vehicle Hire Platform"/>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Hero Heading
+          <span style="color:var(--text-tertiary);font-weight:400"> — main headline (use \n for line break)</span>
+        </label>
+        <input type="text" name="hero_heading" class="form-control" maxlength="120"
+               value="{{ cms.hero_heading or '' }}" placeholder="e.g. Drive Smart,\nGo Anywhere."/>
+      </div>
+
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Hero Subheading
+          <span style="color:var(--text-tertiary);font-weight:400"> — paragraph below heading</span>
+        </label>
+        <textarea name="hero_subheading" class="form-control" rows="3" maxlength="500"
+                  placeholder="Supporting text for the hero banner…">{{ cms.hero_subheading or '' }}</textarea>
+      </div>
+    </div>
+
+    <!-- ── Call to Action ── -->
+    <div class="card card-p-lg" style="margin-bottom:1.25rem">
+      <h3 style="font-size:1rem;font-weight:700;color:var(--text-primary);margin:0 0 1.25rem;display:flex;align-items:center;gap:.5rem">
+        <i class="bi bi-megaphone" style="color:var(--c-brand-600)"></i> Call to Action Section
+      </h3>
+
+      <div class="form-group">
+        <label class="form-label">CTA Heading</label>
+        <input type="text" name="cta_heading" class="form-control" maxlength="120"
+               value="{{ cms.cta_heading or '' }}" placeholder="e.g. Every Journey Deserves a Great Vehicle"/>
+      </div>
+
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">CTA Body Text</label>
+        <textarea name="cta_body" class="form-control" rows="2" maxlength="500"
+                  placeholder="Supporting copy for the CTA banner…">{{ cms.cta_body or '' }}</textarea>
+      </div>
+    </div>
+
+    <!-- ── Contact Info ── -->
+    <div class="card card-p-lg" style="margin-bottom:1.25rem">
+      <h3 style="font-size:1rem;font-weight:700;color:var(--text-primary);margin:0 0 1.25rem;display:flex;align-items:center;gap:.5rem">
+        <i class="bi bi-telephone" style="color:var(--c-brand-600)"></i> Contact Information
+        <span style="font-size:.78rem;font-weight:400;color:var(--text-tertiary)"> — shown in footer and contact sections</span>
+      </h3>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Email Address</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+            <input type="email" name="contact_email" class="form-control" maxlength="120"
+                   value="{{ cms.contact_email or '' }}" placeholder="info@smartdrive.co.ke"/>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Phone Number</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+            <input type="tel" name="contact_phone" class="form-control" maxlength="30"
+                   value="{{ cms.contact_phone or '' }}" placeholder="+254 700 000 000"/>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Office Address</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+            <input type="text" name="contact_address" class="form-control" maxlength="150"
+                   value="{{ cms.contact_address or '' }}" placeholder="Westlands, Nairobi, Kenya"/>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Business Hours</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-clock"></i></span>
+            <input type="text" name="contact_hours" class="form-control" maxlength="60"
+                   value="{{ cms.contact_hours or '' }}" placeholder="Mon–Fri 8am–8pm EAT"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Footer ── -->
+    <div class="card card-p-lg" style="margin-bottom:1.75rem">
+      <h3 style="font-size:1rem;font-weight:700;color:var(--text-primary);margin:0 0 1.25rem;display:flex;align-items:center;gap:.5rem">
+        <i class="bi bi-layout-text-window-reverse" style="color:var(--c-brand-600)"></i> Footer
+      </h3>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Footer Tagline
+          <span style="color:var(--text-tertiary);font-weight:400"> — short description under the logo</span>
+        </label>
+        <input type="text" name="footer_tagline" class="form-control" maxlength="200"
+               value="{{ cms.footer_tagline or '' }}"
+               placeholder="Kenya's intelligent vehicle hire platform. Fast, secure, M-Pesa ready."/>
+      </div>
+    </div>
+
+    <!-- Last updated info -->
+    {% if cms.updated_at %}
+    <p style="font-size:.78rem;color:var(--text-tertiary);margin-bottom:1rem">
+      <i class="bi bi-clock-history" style="margin-right:.3rem"></i>
+      Last updated: {{ cms.updated_at.strftime('%d %b %Y at %H:%M UTC') }}
+    </p>
+    {% endif %}
+
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+      <button type="submit" class="btn btn-primary btn-lg">
+        <i class="bi bi-check2"></i> Save Changes
+      </button>
+      <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary btn-lg">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

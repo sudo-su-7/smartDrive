@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="color-scheme" content="light dark"/>
+  <title>{% block title %}{{ title }} — SmartDrive{% endblock %}</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}"/>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- ── Public shell: topbar + content + footer ── -->
+<div class="public-shell">
+
+  <!-- Topbar -->
+  <header class="public-topbar" role="banner">
+    <div class="public-topbar-inner">
+
+      <!-- Brand -->
+      <a href="{{ url_for('main.index') }}" class="topbar-brand" aria-label="SmartDrive Home">
+        <div class="brand-mark" aria-hidden="true"><i class="bi bi-car-front-fill"></i></div>
+        SmartDrive
+      </a>
+
+      <!-- Desktop nav -->
+      <nav class="public-nav ms-auto" aria-label="Main navigation">
+        <a href="{{ url_for('main.index') }}"
+           class="topbar-link {% if request.endpoint=='main.index' %}active{% endif %}">
+          Home
+        </a>
+        <a href="{{ url_for('main.vehicles') }}"
+           class="topbar-link {% if request.blueprint=='main' and request.endpoint!='main.index' %}active{% endif %}">
+          Vehicles
+        </a>
+        {% if current_user.is_authenticated %}
+          {% if current_user.is_admin() %}
+          <a href="{{ url_for('admin.dashboard') }}" class="topbar-link">Admin Panel</a>
+          {% else %}
+          <a href="{{ url_for('user.dashboard') }}"
+             class="topbar-link {% if request.blueprint=='user' %}active{% endif %}">Dashboard</a>
+          {% endif %}
+        {% endif %}
+      </nav>
+
+      <!-- Actions -->
+      <div class="topbar-actions">
+
+        <!-- Theme toggle -->
+        <button class="theme-toggle js-theme-toggle" aria-label="Toggle dark mode">
+          <i class="bi bi-moon"></i>
+        </button>
+
+        {% if current_user.is_authenticated %}
+
+        <!-- Chat -->
+        <a href="{{ url_for('chat.support_chat') }}" class="icon-btn" aria-label="Support chat">
+          <i class="bi bi-chat-dots"></i>
+        </a>
+
+        <!-- Notifications -->
+        <a href="{{ url_for('user.notifications') }}" class="icon-btn" aria-label="Notifications">
+          <i class="bi bi-bell"></i>
+          {% if unread_notifications > 0 %}
+          <span class="notif-badge" aria-label="{{ unread_notifications }} unread">
+            {{ unread_notifications if unread_notifications < 100 else '99+' }}
+          </span>
+          {% endif %}
+        </a>
+
+        <!-- User dropdown -->
+        <div class="dropdown">
+          <button class="icon-btn" data-dropdown="userMenu" aria-haspopup="true" aria-expanded="false"
+                  style="width:auto;padding:0 .5rem;gap:.5rem;border-radius:var(--r-full);border:1px solid var(--border)">
+            <div class="avatar">{{ current_user.name[0]|upper }}</div>
+            <span style="font-size:.8125rem;font-weight:600;color:var(--text-primary);max-width:100px"
+                  class="truncate d-none d-sm-inline">{{ current_user.name.split()[0] }}</span>
+            <i class="bi bi-chevron-down" style="font-size:.65rem;color:var(--text-secondary)"></i>
+          </button>
+          <div class="dropdown-menu" id="userMenu" role="menu">
+            <div class="dropdown-header">
+              <div style="font-weight:700;color:var(--text-primary)">{{ current_user.name }}</div>
+              <div style="color:var(--text-secondary)">{{ current_user.email }}</div>
+            </div>
+            <div class="dropdown-divider"></div>
+            {% if not current_user.is_admin() %}
+            <a class="dropdown-item" href="{{ url_for('user.dashboard') }}" role="menuitem">
+              <i class="bi bi-grid-1x2"></i> Dashboard
+            </a>
+            <a class="dropdown-item" href="{{ url_for('user.bookings') }}" role="menuitem">
+              <i class="bi bi-calendar-check"></i> My Bookings
+            </a>
+            {% endif %}
+            <a class="dropdown-item" href="{{ url_for('auth.profile') }}" role="menuitem">
+              <i class="bi bi-person"></i> Profile
+            </a>
+            <a class="dropdown-item" href="{{ url_for('auth.change_password') }}" role="menuitem">
+              <i class="bi bi-key"></i> Password
+            </a>
+            <div class="dropdown-divider"></div>
+            <form method="POST" action="{{ url_for('auth.logout') }}" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" class="dropdown-item danger" role="menuitem">
+              <i class="bi bi-box-arrow-right"></i> Sign Out
+            </button>
+          </form>
+          </div>
+        </div>
+
+        {% else %}
+
+        <a href="{{ url_for('auth.login') }}" class="btn btn-ghost btn-sm">Sign In</a>
+        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm">Get Started</a>
+
+        {% endif %}
+
+        <!-- Mobile hamburger -->
+        <button class="hamburger js-mobile-nav-open" aria-label="Open menu">
+          <i class="bi bi-list"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile nav overlay -->
+  <div class="mobile-nav-overlay" id="mobileNavOverlay" aria-hidden="true"></div>
+  <nav class="mobile-nav" id="mobileNav" aria-label="Mobile navigation">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+      <span style="font-weight:800;font-size:1rem;color:var(--text-primary)">Menu</span>
+      <button class="icon-btn js-mobile-nav-close" aria-label="Close menu"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <a href="{{ url_for('main.index') }}" class="mobile-nav-link {% if request.endpoint=='main.index' %}active{% endif %}">
+      <i class="bi bi-house"></i> Home
+    </a>
+    <a href="{{ url_for('main.vehicles') }}" class="mobile-nav-link">
+      <i class="bi bi-car-front"></i> Vehicles
+    </a>
+    {% if current_user.is_authenticated %}
+      {% if current_user.is_admin() %}
+      <a href="{{ url_for('admin.dashboard') }}" class="mobile-nav-link"><i class="bi bi-shield-check"></i> Admin Panel</a>
+      {% else %}
+      <a href="{{ url_for('user.dashboard') }}" class="mobile-nav-link"><i class="bi bi-grid-1x2"></i> Dashboard</a>
+      <a href="{{ url_for('user.bookings') }}" class="mobile-nav-link"><i class="bi bi-calendar-check"></i> My Bookings</a>
+      <a href="{{ url_for('chat.support_chat') }}" class="mobile-nav-link"><i class="bi bi-chat-dots"></i> Support Chat</a>
+      {% endif %}
+      <a href="{{ url_for('auth.profile') }}" class="mobile-nav-link"><i class="bi bi-person"></i> Profile</a>
+      <div style="height:1px;background:var(--border);margin:.75rem 0"></div>
+      <form method="POST" action="{{ url_for('auth.logout') }}" style="display:block">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <button type="submit" class="mobile-nav-link" style="background:none;border:none;cursor:pointer;text-align:left;width:100%;color:var(--c-danger-500)">
+        <i class="bi bi-box-arrow-right"></i> Sign Out
+      </button>
+    </form>
+    {% else %}
+      <div style="height:1px;background:var(--border);margin:.75rem 0"></div>
+      <a href="{{ url_for('auth.login') }}"    class="mobile-nav-link"><i class="bi bi-box-arrow-in-right"></i> Sign In</a>
+      <a href="{{ url_for('auth.register') }}" class="mobile-nav-link"><i class="bi bi-person-plus"></i> Register</a>
+    {% endif %}
+  </nav>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="js-flash-region" style="max-width:var(--content-max);margin:1rem auto;padding:0 var(--page-px)">
+    {% for cat, msg in messages %}
+    <div class="alert alert-{{ 'danger' if cat=='error' else cat }}" role="alert">
+      <i class="bi bi-{% if cat=='success' %}check-circle-fill{% elif cat=='danger' or cat=='error' %}x-circle-fill{% elif cat=='warning' %}exclamation-triangle-fill{% else %}info-circle-fill{% endif %}"></i>
+      <span>{{ msg }}</span>
+      <button class="alert-close" aria-label="Dismiss"><i class="bi bi-x-lg"></i></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <!-- Page content -->
+  <main id="main-content">{% block content %}{% endblock %}</main>
+
+  <!-- Footer -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="page-wrapper">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:2.5rem 2rem;margin-bottom:2.5rem">
+        <div>
+          <div class="footer-logo" style="margin-bottom:.75rem">
+            <i class="bi bi-car-front-fill" style="color:var(--c-brand-500);margin-right:.4rem"></i>SmartDrive
+          </div>
+          <p style="font-size:.8125rem;line-height:1.65;margin:0">{{ site.footer_tagline or "Kenya's intelligent vehicle hire platform. Fast, secure, M-Pesa ready." }}</p>
+        </div>
+        <div>
+          <p style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.35);margin-bottom:.875rem">Platform</p>
+          <div style="display:flex;flex-direction:column;gap:.5rem">
+            <a href="{{ url_for('main.vehicles') }}" style="font-size:.8125rem">Browse Vehicles</a>
+            {% if not current_user.is_authenticated %}
+            <a href="{{ url_for('auth.register') }}" style="font-size:.8125rem">Create Account</a>
+            <a href="{{ url_for('auth.login') }}" style="font-size:.8125rem">Sign In</a>
+            {% endif %}
+          </div>
+        </div>
+        <div>
+          <p style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.35);margin-bottom:.875rem">Contact</p>
+          <div style="display:flex;flex-direction:column;gap:.5rem;font-size:.8125rem">
+            <span><i class="bi bi-envelope" style="margin-right:.4rem;color:var(--c-brand-400)"></i>{{ site.contact_email or 'info@smartdrive.co.ke' }}</span>
+            <span><i class="bi bi-telephone" style="margin-right:.4rem;color:var(--c-brand-400)"></i>{{ site.contact_phone or '+254 700 000 000' }}</span>
+            <span><i class="bi bi-geo-alt" style="margin-right:.4rem;color:var(--c-brand-400)"></i>{{ site.contact_address or 'Westlands, Nairobi' }}</span>
+            {% if site.contact_hours %}<span><i class="bi bi-clock" style="margin-right:.4rem;color:var(--c-brand-400)"></i>{{ site.contact_hours }}</span>{% endif %}
+          </div>
+        </div>
+      </div>
+      <div style="border-top:1px solid rgba(255,255,255,.07);padding-top:1.5rem;display:flex;flex-wrap:wrap;justify-content:space-between;gap:.75rem;font-size:.78rem">
+        <span>&copy; 2026 SmartDrive Kenya. All rights reserved.</span>
+        <span style="color:rgba(255,255,255,.3)">Built with Flask &amp; love in Nairobi 🇰🇪</span>
+      </div>
+    </div>
+  </footer>
+
+</div><!-- /public-shell -->
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,64 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_content %}
+<div style="padding:1.75rem var(--page-px) 2.5rem">
+  <div class="row-between" style="margin-bottom:1.5rem">
+    <div><h2 class="t-h2">Manage Users</h2></div>
+  </div>
+
+  <form method="GET" style="margin-bottom:1.5rem">
+    <div class="input-group" style="max-width:380px">
+      <input type="text" name="q" class="form-control" placeholder="Search name or email…" value="{{ search }}"/>
+      <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
+    </div>
+  </form>
+
+  {% if users %}
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table class="table">
+        <thead><tr><th>User</th><th>Phone</th><th>Bookings</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:.75rem">
+                <div class="avatar">{{ u.name[0]|upper }}</div>
+                <div>
+                  <div style="font-weight:600;font-size:.875rem">{{ u.name }}</div>
+                  <div style="font-size:.75rem;color:var(--text-secondary)">{{ u.email }}</div>
+                </div>
+              </div>
+            </td>
+            <td style="font-size:.8125rem;color:var(--text-secondary)">{{ u.phone or '—' }}</td>
+            <td style="font-size:.875rem;font-weight:600">{{ u.booking_count }}</td>
+            <td>
+              {% if u.get('is_active', True) %}<span class="badge badge-green">Active</span>
+              {% else %}<span class="badge badge-red">Suspended</span>{% endif %}
+            </td>
+            <td style="font-size:.8125rem;color:var(--text-secondary)">{{ u.created_at.strftime('%d %b %Y') if u.created_at else '—' }}</td>
+            <td>
+              <form method="POST" action="{{ url_for('admin.toggle_user_active', user_id=u._id) }}"
+                    onsubmit="return confirm('Toggle account status for {{ u.name }}?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button class="btn btn-secondary btn-sm">{{ 'Suspend' if u.get('is_active', True) else 'Activate' }}</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if paginator.pages > 1 %}
+  <div class="pagination" style="justify-content:center;margin-top:1.5rem">
+    <a class="page-btn {% if not paginator.has_prev %}disabled{% endif %}" href="?page={{ paginator.prev_num }}&q={{ search }}"><i class="bi bi-chevron-left"></i></a>
+    {% for p in paginator.iter_pages() %}{% if p %}<a class="page-btn {% if p==paginator.page %}active{% endif %}" href="?page={{ p }}&q={{ search }}">{{ p }}</a>{% else %}<span class="page-btn disabled">…</span>{% endif %}{% endfor %}
+    <a class="page-btn {% if not paginator.has_next %}disabled{% endif %}" href="?page={{ paginator.next_num }}&q={{ search }}"><i class="bi bi-chevron-right"></i></a>
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="empty-state"><i class="bi bi-people"></i><h5>No users found</h5></div>
+  {% endif %}
+</div>
+{% endblock %}

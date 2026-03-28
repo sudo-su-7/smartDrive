@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block extra_head %}
+{% if booking.pickup_location and booking.pickup_location.lat %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper" style="padding-top:2.5rem;padding-bottom:3rem">
+  <nav style="font-size:.8125rem;color:var(--text-secondary);margin-bottom:1.75rem">
+    <a href="{{ url_for('user.bookings') }}" style="color:var(--text-secondary)">My Bookings</a>
+    <span style="margin:0 .5rem;color:var(--text-tertiary)">/</span>
+    <span style="color:var(--text-primary)">Booking Detail</span>
+  </nav>
+
+  <div style="display:grid;grid-template-columns:1fr 320px;gap:1.75rem;align-items:start">
+
+    <!-- Left -->
+    <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+      <!-- Status card -->
+      <div class="card card-p-lg">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem">
+          <div>
+            <h1 style="font-size:1.375rem;font-weight:800;letter-spacing:-.025em;color:var(--text-primary);margin:0 0 .25rem">
+              {{ vehicle.name if vehicle else 'Vehicle' }}
+            </h1>
+            <p style="font-size:.8125rem;color:var(--text-tertiary);margin:0;font-family:monospace">
+              #{{ booking._id|string|upper|truncate(16,true,'') }}
+            </p>
+          </div>
+          <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+            <span class="badge status-{{ booking.status }}" style="font-size:.8rem;padding:.3rem .75rem">{{ booking.status|title }}</span>
+            <span class="badge status-{{ booking.payment_status }}" style="font-size:.8rem;padding:.3rem .75rem">{{ booking.payment_status|replace('_',' ')|title }}</span>
+          </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="booking-timeline" style="margin-bottom:1.5rem">
+          <div class="bt-date">
+            <div class="bt-day">{{ booking.start_date.strftime('%d') }}</div>
+            <div class="bt-month">{{ booking.start_date.strftime('%b %Y') }}</div>
+          </div>
+          <div class="bt-arrow">
+            <i class="bi bi-arrow-right" style="color:var(--text-tertiary)"></i>
+            <span style="font-weight:600;color:var(--text-secondary)">{{ booking.days }} day{{ 's' if booking.days>1 else '' }}</span>
+          </div>
+          <div class="bt-date">
+            <div class="bt-day">{{ booking.end_date.strftime('%d') }}</div>
+            <div class="bt-month">{{ booking.end_date.strftime('%b %Y') }}</div>
+          </div>
+        </div>
+
+        <!-- Locations -->
+        {% if booking.pickup_location and booking.pickup_location.address %}
+        <div style="margin-bottom:.625rem">
+          <p style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);margin:0 0 .4rem">Pick-up</p>
+          <div class="loc-chip"><i class="bi bi-geo-alt-fill" style="color:var(--c-success-500);flex-shrink:0"></i><span>{{ booking.pickup_location.address }}</span></div>
+        </div>
+        {% endif %}
+        {% if booking.dropoff_location and booking.dropoff_location.address %}
+        <div style="margin-bottom:.625rem">
+          <p style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);margin:0 0 .4rem">Drop-off</p>
+          <div class="loc-chip"><i class="bi bi-geo-alt-fill" style="color:var(--c-danger-500);flex-shrink:0"></i><span>{{ booking.dropoff_location.address }}</span></div>
+        </div>
+        {% endif %}
+
+        {% if (booking.pickup_location and booking.pickup_location.lat) or (booking.dropoff_location and booking.dropoff_location.lat) %}
+        <div style="margin-top:1rem;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
+          <div id="bookingMap" style="height:220px"></div>
+        </div>
+        {% endif %}
+
+        {% if booking.notes %}
+        <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+          <p style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);margin:0 0 .4rem">Notes</p>
+          <p style="font-size:.875rem;color:var(--text-secondary);margin:0;line-height:1.65">{{ booking.notes }}</p>
+        </div>
+        {% endif %}
+
+        {% if booking.admin_notes %}
+        <div class="alert alert-info" style="margin-top:1rem">
+          <i class="bi bi-chat-quote"></i>
+          <span><strong>Admin note:</strong> {{ booking.admin_notes }}</span>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Payment receipt -->
+      {% if booking.mpesa_transaction_id %}
+      <div class="card card-p">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem">
+          <div class="stat-icon si-green" style="flex-shrink:0"><i class="bi bi-receipt"></i></div>
+          <span style="font-weight:700;font-size:.9375rem">Payment Receipt</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+          {% for label, val in [('Transaction ID', booking.mpesa_transaction_id),('Amount Paid','KES {:,.0f}'.format(booking.total_amount))] %}
+          <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-md);padding:.75rem">
+            <div style="font-size:.72rem;color:var(--text-tertiary);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">{{ label }}</div>
+            <div style="font-size:.875rem;font-weight:700;color:var(--text-primary)">{{ val }}</div>
+          </div>
+          {% endfor %}
+          {% if booking.mpesa_phone %}
+          <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-md);padding:.75rem">
+            <div style="font-size:.72rem;color:var(--text-tertiary);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">M-Pesa Phone</div>
+            <div style="font-size:.875rem;font-weight:700;color:var(--text-primary)">{{ booking.mpesa_phone }}</div>
+          </div>
+          {% endif %}
+          {% if booking.paid_at %}
+          <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-md);padding:.75rem">
+            <div style="font-size:.72rem;color:var(--text-tertiary);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">Paid At</div>
+            <div style="font-size:.875rem;font-weight:700;color:var(--text-primary)">{{ booking.paid_at.strftime('%d %b %Y %H:%M') }}</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Right: sidebar -->
+    <div style="display:flex;flex-direction:column;gap:1rem;position:sticky;top:calc(var(--topbar-h)+1rem)">
+
+      <!-- Cost -->
+      <div class="card card-p">
+        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);margin-bottom:.875rem">Cost Breakdown</div>
+        <div style="display:flex;justify-content:space-between;font-size:.8125rem;margin-bottom:.5rem">
+          <span style="color:var(--text-secondary)">Rate per day</span>
+          <span>KES {{ '{:,.0f}'.format(booking.price_per_day) }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.8125rem;margin-bottom:.75rem">
+          <span style="color:var(--text-secondary)">Duration</span>
+          <span>× {{ booking.days }}</span>
+        </div>
+        <div style="height:1px;background:var(--border);margin-bottom:.75rem"></div>
+        <div style="display:flex;justify-content:space-between;font-weight:800;font-size:1.05rem">
+          <span>Total</span>
+          <span style="color:var(--c-brand-600)">KES {{ '{:,.2f}'.format(booking.total_amount) }}</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="card card-p">
+        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);margin-bottom:.875rem">Actions</div>
+        <div style="display:flex;flex-direction:column;gap:.5rem">
+
+          {% if booking.status=='approved' and booking.payment_status!='paid' %}
+          <a href="{{ url_for('payment.mpesa_pay', booking_id=booking._id) }}" class="btn btn-mpesa btn-block">
+            <i class="bi bi-phone-fill"></i> Pay with M-Pesa
+          </a>
+          {% elif booking.payment_status=='paid' %}
+          <div style="display:flex;align-items:center;gap:.5rem;padding:.625rem .875rem;background:var(--c-success-50);border-radius:var(--r-md);font-size:.875rem;color:var(--c-success-700);font-weight:600">
+            <i class="bi bi-check-circle-fill"></i> Payment Complete
+          </div>
+          {% endif %}
+
+          <a href="{{ url_for('chat.booking_chat', booking_id=booking._id) }}" class="btn btn-outline-brand btn-block">
+            <i class="bi bi-chat-dots"></i> Chat with Support
+          </a>
+
+          {% if booking.status=='pending' %}
+          <form method="POST" action="{{ url_for('user.cancel_booking', booking_id=booking._id) }}"
+                onsubmit="return confirm('Cancel this booking?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" class="btn btn-ghost btn-block" style="color:var(--c-danger-500)">
+              <i class="bi bi-x-circle"></i> Cancel Booking
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Vehicle -->
+      {% if vehicle %}
+      <div class="card" style="overflow:hidden">
+        {% if vehicle.image %}
+        <img src="{{ url_for('static', filename='uploads/vehicles/' + vehicle.image) }}"
+             style="width:100%;height:130px;object-fit:cover" alt="{{ vehicle.name }}"/>
+        {% endif %}
+        <div class="card-p">
+          <div style="font-weight:700;font-size:.9rem;color:var(--text-primary);margin-bottom:.2rem">{{ vehicle.name }}</div>
+          <div style="font-size:.78rem;color:var(--text-secondary);margin-bottom:.875rem">{{ vehicle.model }} · {{ vehicle.plate_number }}</div>
+          <a href="{{ url_for('main.vehicle_detail', vehicle_id=vehicle._id) }}" class="btn btn-secondary btn-block btn-sm">View Vehicle</a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if (booking.pickup_location and booking.pickup_location.lat) or (booking.dropoff_location and booking.dropoff_location.lat) %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+const pickupLat  = {{ booking.pickup_location.lat  if booking.pickup_location  and booking.pickup_location.lat  else 'null' }};
+const pickupLng  = {{ booking.pickup_location.lng  if booking.pickup_location  and booking.pickup_location.lng  else 'null' }};
+const dropoffLat = {{ booking.dropoff_location.lat if booking.dropoff_location and booking.dropoff_location.lat else 'null' }};
+const dropoffLng = {{ booking.dropoff_location.lng if booking.dropoff_location and booking.dropoff_location.lng else 'null' }};
+
+const center = pickupLat ? [pickupLat, pickupLng] : [dropoffLat, dropoffLng];
+const map = L.map('bookingMap', {zoomControl:true, scrollWheelZoom:false}).setView(center, 14);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+
+function pin(lat,lng,color,label){
+  const icon = L.divIcon({
+    html:`<div style="width:22px;height:22px;background:${color};border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>`,
+    iconSize:[22,22],iconAnchor:[11,22],className:''
+  });
+  L.marker([lat,lng],{icon}).addTo(map).bindPopup(label);
+}
+
+if(pickupLat)  pin(pickupLat,  pickupLng,  '#22c55e', 'Pick-up');
+if(dropoffLat) pin(dropoffLat, dropoffLng, '#ef4444', 'Drop-off');
+
+if(pickupLat && dropoffLat){
+  map.fitBounds([[pickupLat,pickupLng],[dropoffLat,dropoffLng]], {padding:[30,30]});
+}
+</script>
+{% endif %}
+{% endblock %}

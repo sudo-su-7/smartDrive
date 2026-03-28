@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-wrapper" style="padding-top:2.5rem;padding-bottom:3rem">
+  <div class="row-between" style="margin-bottom:2rem">
+    <div>
+      <h1 class="t-h1">Available Vehicles</h1>
+      <p style="color:var(--text-secondary);font-size:.875rem;margin:.25rem 0 0">{{ paginator.total }} vehicle{{ 's' if paginator.total!=1 else '' }} found</p>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:240px 1fr;gap:1.75rem;align-items:start">
+
+    <!-- Filters -->
+    <aside>
+      <div class="card card-p" style="position:sticky;top:calc(var(--topbar-h) + 1rem)">
+        <div style="font-size:.8125rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-secondary);margin-bottom:1rem">
+          <i class="bi bi-sliders" style="margin-right:.4rem"></i>Filters
+        </div>
+        <form method="GET">
+          <div class="form-group">
+            <label class="form-label">Search</label>
+            <input type="text" name="q" class="form-control" value="{{ search }}" placeholder="Name, model…"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fuel Type</label>
+            <select name="fuel" class="form-select">
+              <option value="">All</option>
+              {% for v,l in [('petrol','Petrol'),('diesel','Diesel'),('electric','Electric'),('hybrid','Hybrid')] %}
+              <option value="{{ v }}" {{ 'selected' if fuel==v }}>{{ l }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Transmission</label>
+            <select name="transmission" class="form-select">
+              <option value="">All</option>
+              <option value="automatic" {{ 'selected' if trans=='automatic' }}>Automatic</option>
+              <option value="manual"    {{ 'selected' if trans=='manual' }}>Manual</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Min Price (KES)</label>
+            <input type="number" name="min_price" class="form-control" value="{{ min_price or '' }}" placeholder="0"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Max Price (KES)</label>
+            <input type="number" name="max_price" class="form-control" value="{{ max_price or '' }}" placeholder="Unlimited"/>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block" style="margin-top:.75rem">Apply</button>
+          {% if search or fuel or trans or min_price or max_price %}
+          <a href="{{ url_for('main.vehicles') }}" class="btn btn-ghost btn-block" style="margin-top:.4rem">Clear all</a>
+          {% endif %}
+        </form>
+      </div>
+    </aside>
+
+    <!-- Grid -->
+    <div>
+      {% if vehicles %}
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:1.25rem">
+        {% for v in vehicles %}
+        <div class="vehicle-card card-hover">
+          <div class="vehicle-img-wrap">
+            {% if v.image %}<img src="{{ url_for('static', filename='uploads/vehicles/' + v.image) }}" class="vehicle-img" alt="{{ v.name }}"/>
+            {% else %}<div class="vehicle-placeholder"><i class="bi bi-car-front"></i></div>{% endif %}
+            <span class="vehicle-status-badge badge-green">Available</span>
+          </div>
+          <div class="vehicle-body">
+            <div class="vehicle-name">{{ v.name }}</div>
+            <div class="vehicle-model">{{ v.model }}</div>
+            <div class="vehicle-specs">
+              <span class="spec-tag"><i class="bi bi-fuel-pump"></i>{{ v.fuel_type|title }}</span>
+              <span class="spec-tag"><i class="bi bi-gear"></i>{{ v.transmission|title }}</span>
+              <span class="spec-tag"><i class="bi bi-people"></i>{{ v.capacity }}</span>
+            </div>
+            <div class="vehicle-footer">
+              <div><span class="vehicle-price">KES {{ '{:,.0f}'.format(v.price_per_day) }}</span><span class="vehicle-price-unit"> /day</span></div>
+              <div style="display:flex;gap:.4rem">
+                <a href="{{ url_for('main.vehicle_detail', vehicle_id=v._id) }}" class="btn btn-ghost btn-sm" title="View"><i class="bi bi-eye"></i></a>
+                {% if current_user.is_authenticated and not current_user.is_admin() %}
+                <a href="{{ url_for('user.book_vehicle', vehicle_id=v._id) }}" class="btn btn-primary btn-sm">Book</a>
+                {% elif not current_user.is_authenticated %}
+                <a href="{{ url_for('auth.login') }}?next={{ url_for('user.book_vehicle', vehicle_id=v._id) }}" class="btn btn-primary btn-sm">Book</a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if paginator.pages > 1 %}
+      <div class="pagination" style="justify-content:center;margin-top:2rem">
+        <a class="page-btn {% if not paginator.has_prev %}disabled{% endif %}" href="?page={{ paginator.prev_num }}&q={{ search }}&fuel={{ fuel }}&transmission={{ trans }}"><i class="bi bi-chevron-left"></i></a>
+        {% for p in paginator.iter_pages() %}
+          {% if p %}<a class="page-btn {% if p==paginator.page %}active{% endif %}" href="?page={{ p }}&q={{ search }}&fuel={{ fuel }}&transmission={{ trans }}">{{ p }}</a>
+          {% else %}<span class="page-btn disabled">…</span>{% endif %}
+        {% endfor %}
+        <a class="page-btn {% if not paginator.has_next %}disabled{% endif %}" href="?page={{ paginator.next_num }}&q={{ search }}&fuel={{ fuel }}&transmission={{ trans }}"><i class="bi bi-chevron-right"></i></a>
+      </div>
+      {% endif %}
+
+      {% else %}
+      <div class="empty-state"><i class="bi bi-car-front"></i><h5>No vehicles found</h5><p>Try adjusting your filters.</p><a href="{{ url_for('main.vehicles') }}" class="btn btn-primary">Clear filters</a></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

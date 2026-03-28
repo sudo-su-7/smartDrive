@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-wrapper" style="padding-top:2.5rem;padding-bottom:3rem">
+  <div class="row-between" style="margin-bottom:1.75rem">
+    <div><h1 class="t-h1">My Bookings</h1><p style="color:var(--text-secondary);font-size:.875rem;margin:.25rem 0 0">Track and manage your reservations</p></div>
+    <a href="{{ url_for('main.vehicles') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> New Booking</a>
+  </div>
+
+  <!-- Filter pills -->
+  <div class="pill-nav" style="margin-bottom:1.5rem">
+    {% for s, label in [('','All'),('pending','Pending'),('approved','Approved'),('rejected','Rejected'),('cancelled','Cancelled'),('completed','Completed')] %}
+    <a href="{{ url_for('user.bookings', status=s) }}" class="pill-link {{ 'active' if status_filter==s }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  {% if bookings %}
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table class="table">
+        <thead>
+          <tr><th>Vehicle</th><th>Dates</th><th>Days</th><th>Amount</th><th>Status</th><th>Payment</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for b in bookings %}
+          <tr>
+            <td>
+              <div style="font-weight:600;font-size:.875rem">{{ b.vehicle.name if b.vehicle else 'N/A' }}</div>
+              <div style="font-size:.78rem;color:var(--text-secondary)">{{ b.vehicle.plate_number if b.vehicle else '' }}</div>
+            </td>
+            <td style="font-size:.8125rem">
+              {{ b.start_date.strftime('%d %b %Y') }}<br>
+              <span style="color:var(--text-secondary)">→ {{ b.end_date.strftime('%d %b %Y') }}</span>
+            </td>
+            <td style="font-size:.8125rem">{{ b.days }}</td>
+            <td style="font-weight:700;font-size:.875rem">KES {{ '{:,.0f}'.format(b.total_amount) }}</td>
+            <td><span class="badge status-{{ b.status }}">{{ b.status|title }}</span></td>
+            <td><span class="badge status-{{ b.payment_status }}">{{ b.payment_status|replace('_',' ')|title }}</span></td>
+            <td>
+              <div style="display:flex;gap:.35rem;flex-wrap:wrap">
+                <a href="{{ url_for('user.booking_detail', booking_id=b._id) }}" class="btn btn-ghost btn-sm">View</a>
+                {% if b.status=='pending' %}
+                <form method="POST" action="{{ url_for('user.cancel_booking', booking_id=b._id) }}" onsubmit="return confirm('Cancel this booking?')">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                  <button class="btn btn-ghost btn-sm" style="color:var(--c-danger-500)">Cancel</button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if paginator.pages > 1 %}
+  <div class="pagination" style="justify-content:center;margin-top:1.5rem">
+    <a class="page-btn {% if not paginator.has_prev %}disabled{% endif %}" href="?page={{ paginator.prev_num }}&status={{ status_filter }}"><i class="bi bi-chevron-left"></i></a>
+    {% for p in paginator.iter_pages() %}{% if p %}<a class="page-btn {% if p==paginator.page %}active{% endif %}" href="?page={{ p }}&status={{ status_filter }}">{{ p }}</a>{% else %}<span class="page-btn disabled">…</span>{% endif %}{% endfor %}
+    <a class="page-btn {% if not paginator.has_next %}disabled{% endif %}" href="?page={{ paginator.next_num }}&status={{ status_filter }}"><i class="bi bi-chevron-right"></i></a>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="empty-state"><i class="bi bi-calendar-x"></i><h5>No bookings found</h5><p>{{ 'No bookings with status "'+status_filter+'"' if status_filter else 'You have no bookings yet.' }}</p><a href="{{ url_for('main.vehicles') }}" class="btn btn-primary">Browse Vehicles</a></div>
+  {% endif %}
+</div>
+{% endblock %}

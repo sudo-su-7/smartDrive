@@ -1,0 +1,116 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_content %}
+<div style="padding:1.75rem var(--page-px) 2.5rem;max-width:820px">
+  <nav style="font-size:.8125rem;color:var(--text-secondary);margin-bottom:1.75rem">
+    <a href="{{ url_for('admin.vehicles') }}" style="color:var(--text-secondary)">Vehicles</a>
+    <span style="margin:0 .5rem;color:var(--text-tertiary)">/</span>
+    <span style="color:var(--text-primary)">{{ 'Edit' if mode=='edit' else 'Add' }} Vehicle</span>
+  </nav>
+
+  <div class="card card-p-lg">
+    <h2 style="font-size:1.25rem;font-weight:800;color:var(--text-primary);margin:0 0 1.75rem;display:flex;align-items:center;gap:.5rem">
+      <i class="bi bi-{{ 'pencil' if mode=='edit' else 'plus-circle' }}" style="color:var(--c-brand-600)"></i>
+      {{ 'Edit Vehicle' if mode=='edit' else 'Add New Vehicle' }}
+    </h2>
+
+    <form method="POST" enctype="multipart/form-data" novalidate>
+      {{ form.hidden_tag() }}
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Vehicle Name <span class="required">*</span></label>
+          {{ form.name(class="form-control"~(" is-invalid" if form.name.errors else ""), placeholder="e.g. Toyota Land Cruiser") }}
+          {% for e in form.name.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Model / Year <span class="required">*</span></label>
+          {{ form.model(class="form-control"~(" is-invalid" if form.model.errors else ""), placeholder="e.g. Land Cruiser V8 2021") }}
+          {% for e in form.model.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Plate Number <span class="required">*</span></label>
+          {{ form.plate_number(class="form-control"~(" is-invalid" if form.plate_number.errors else ""), placeholder="KBZ 123A", style="text-transform:uppercase") }}
+          {% for e in form.plate_number.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Price per Day (KES) <span class="required">*</span></label>
+          <div class="input-group">
+            <span class="input-group-text">KES</span>
+            {{ form.price_per_day(class="form-control"~(" is-invalid" if form.price_per_day.errors else ""), placeholder="3500") }}
+          </div>
+          {% for e in form.price_per_day.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Seating Capacity <span class="required">*</span></label>
+          {{ form.capacity(class="form-control"~(" is-invalid" if form.capacity.errors else ""), placeholder="5") }}
+          {% for e in form.capacity.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Fuel Type <span class="required">*</span></label>
+          {{ form.fuel_type(class="form-select"~(" is-invalid" if form.fuel_type.errors else "")) }}
+          {% for e in form.fuel_type.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Transmission <span class="required">*</span></label>
+          {{ form.transmission(class="form-select"~(" is-invalid" if form.transmission.errors else "")) }}
+          {% for e in form.transmission.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Status <span class="required">*</span></label>
+          {{ form.status(class="form-select"~(" is-invalid" if form.status.errors else "")) }}
+          {% for e in form.status.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        {{ form.description(class="form-control"~(" is-invalid" if form.description.errors else ""), rows=3, placeholder="Describe key features, ideal use case, any extras…") }}
+        {% for e in form.description.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Vehicle Image</label>
+        {{ form.image(class="form-control"~(" is-invalid" if form.image.errors else ""), id="imageInput", accept="image/png,image/jpeg,image/webp", onchange="previewImg(this)") }}
+        {% for e in form.image.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+        <p class="form-hint">PNG / JPG / WebP · Max 5 MB · Recommended 1200×800 px</p>
+        {% if mode=='edit' and vehicle and vehicle.image %}
+        <div style="margin-top:.75rem">
+          <p style="font-size:.78rem;color:var(--text-secondary);margin-bottom:.4rem">Current image:</p>
+          <img src="{{ url_for('static', filename='uploads/vehicles/' + vehicle.image) }}"
+               id="imgPreview"
+               style="height:100px;width:auto;object-fit:cover;border-radius:var(--r-md);border:1px solid var(--border)" alt="Current vehicle image"/>
+        </div>
+        {% else %}
+        <img id="imgPreview" src="#" alt="Preview" style="height:100px;width:auto;object-fit:cover;border-radius:var(--r-md);border:1px solid var(--border);margin-top:.75rem;display:none"/>
+        {% endif %}
+      </div>
+
+      <div style="height:1px;background:var(--border);margin:1.5rem 0"></div>
+
+      <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+        <button type="submit" class="btn btn-primary btn-lg">
+          <i class="bi bi-{{ 'check2' if mode=='edit' else 'plus-circle' }}"></i>
+          {{ form.submit.label.text }}
+        </button>
+        <a href="{{ url_for('admin.vehicles') }}" class="btn btn-secondary btn-lg">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+function previewImg(input){
+  const prev = document.getElementById('imgPreview');
+  if(input.files && input.files[0]){
+    const r = new FileReader();
+    r.onload = e => { prev.src = e.target.result; prev.style.display = 'block'; };
+    r.readAsDataURL(input.files[0]);
+  }
+}
+</script>
+{% endblock %}

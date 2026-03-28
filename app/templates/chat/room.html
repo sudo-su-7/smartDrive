@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-wrapper" style="padding-top:2rem;padding-bottom:2rem">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.25rem;flex-wrap:wrap">
+    <div>
+      <h1 style="font-size:1.25rem;font-weight:800;color:var(--text-primary);margin:0 0 .2rem">
+        {% if booking %}<i class="bi bi-chat-dots" style="color:var(--c-brand-600);margin-right:.4rem"></i>Booking Chat{% else %}<i class="bi bi-headset" style="color:var(--c-brand-600);margin-right:.4rem"></i>Support Chat{% endif %}
+      </h1>
+      <p style="font-size:.8125rem;color:var(--text-secondary);margin:0">
+        {% if booking %}
+          Booking for {{ vehicle.name if vehicle else 'vehicle' }} ·
+          <span class="badge status-{{ booking.status }}">{{ booking.status|title }}</span>
+        {% else %}
+          Our team typically replies within minutes
+        {% endif %}
+      </p>
+    </div>
+    {% if booking %}
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <a href="{{ url_for('user.booking_detail', booking_id=booking._id) }}" class="btn btn-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Booking
+      </a>
+      {% if not current_user.is_admin() and booking.status=='approved' and booking.payment_status!='paid' %}
+      <a href="{{ url_for('payment.mpesa_pay', booking_id=booking._id) }}" class="btn btn-mpesa btn-sm">
+        <i class="bi bi-phone-fill"></i> Pay M-Pesa
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="chat-shell">
+    <!-- Header bar -->
+    <div class="chat-top">
+      <div class="chat-top-avatar">
+        {% if current_user.is_admin() %}<i class="bi bi-people"></i>{% else %}<i class="bi bi-headset"></i>{% endif %}
+      </div>
+      <div style="flex:1">
+        <div class="chat-top-name">{% if booking %}Booking Support{% else %}SmartDrive Support{% endif %}</div>
+        <div class="chat-top-status">Online</div>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="chat-messages" id="chatMessages">
+      {% if not messages %}
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 1rem;color:var(--text-secondary);text-align:center">
+        <i class="bi bi-chat-dots" style="font-size:3rem;color:var(--text-tertiary);display:block;margin-bottom:1rem"></i>
+        <p style="font-weight:600;color:var(--text-primary);margin:0 0 .35rem">No messages yet</p>
+        <p style="font-size:.875rem;margin:0">Start the conversation — our team is here to help.</p>
+      </div>
+      {% endif %}
+
+      {% set last_date = namespace(val=None) %}
+      {% for msg in messages %}
+        {% set d = msg.created_at.strftime('%B %d, %Y') %}
+        {% if d != last_date.val %}
+        <div class="chat-date-sep"><span>{{ d }}</span></div>
+        {% set last_date.val = d %}
+        {% endif %}
+
+        {% if msg.sender_id == current_user.id %}
+        <div class="chat-bubble-wrap mine">
+          <div class="chat-bubble mine">{{ msg.message }}</div>
+          <div class="chat-time">{{ msg.created_at.strftime('%H:%M') }}</div>
+        </div>
+        {% else %}
+        <div class="chat-bubble-wrap theirs">
+          <div class="chat-sender">
+            <div class="avatar" style="width:22px;height:22px;font-size:.65rem;{% if msg.sender_role=='admin' %}background:#7c3aed{% endif %}">
+              {{ msg.sender_name[0]|upper if msg.sender_name else '?' }}
+            </div>
+            <span class="s-name">{{ msg.sender_name }}</span>
+            {% if msg.sender_role=='admin' %}<span class="s-role">Admin</span>{% endif %}
+          </div>
+          <div class="chat-bubble {% if msg.sender_role=='admin' %}admin{% else %}theirs{% endif %}">{{ msg.message }}</div>
+          <div class="chat-time">{{ msg.created_at.strftime('%H:%M') }}</div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- Input -->
+    <div class="chat-input-row">
+      <textarea id="msgInput" class="chat-textarea" placeholder="Type a message… (Enter to send)" rows="1" maxlength="1000"></textarea>
+      <button id="sendBtn" class="chat-send" title="Send (Enter)">
+        <i class="bi bi-send-fill"></i>
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const ROOM_ID  = {{ room_id|tojson }};
+const MY_ID    = {{ current_user.id|tojson }};
+const MY_ROLE  = {{ current_user.role|tojson }};
+const msgEl    = document.getElementById('chatMessages');
+const input    = document.getElementById('msgInput');
+const sendBtn  = document.getElementById('sendBtn');
+let lastTs     = null;
+
+{% if messages %}lastTs = {{ (messages[-1].created_at.isoformat() + 'Z')|tojson }};{% endif %}
+
+function scrollBottom(){ msgEl.scrollTop = msgEl.scrollHeight; }
+scrollBottom();
+
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+});
+input.addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); } });
+sendBtn.addEventListener('click', send);
+
+function fmtTime(iso){ return new Date(iso).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+
+function appendMsg(m){
+  // remove empty state
+  const empty = msgEl.querySelector('.empty-state-chat');
+  if(empty) empty.remove();
+
+  const isMine = m.sender_id === MY_ID;
+  const isAdmin = m.sender_role === 'admin';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'chat-bubble-wrap ' + (isMine ? 'mine' : 'theirs');
+  wrap.dataset.id = m.id;
+
+  if(!isMine){
+    const sender = document.createElement('div');
+    sender.className = 'chat-sender';
+    sender.innerHTML = `
+      <div class="avatar" style="width:22px;height:22px;font-size:.65rem;${isAdmin?'background:#7c3aed':''}">
+        ${(m.sender_name||'?')[0].toUpperCase()}
+      </div>
+      <span class="s-name">${m.sender_name||''}</span>
+      ${isAdmin?'<span class="s-role">Admin</span>':''}`;
+    wrap.appendChild(sender);
+  }
+
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble ' + (isMine ? 'mine' : isAdmin ? 'admin' : 'theirs');
+  bubble.textContent = m.message;
+  wrap.appendChild(bubble);
+
+  const time = document.createElement('div');
+  time.className = 'chat-time';
+  time.textContent = fmtTime(m.created_at);
+  wrap.appendChild(time);
+
+  msgEl.appendChild(wrap);
+  scrollBottom();
+  lastTs = m.created_at;
+}
+
+async function send(){
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+  sendBtn.disabled = true;
+  try{
+    const res = await fetch(`/chat/api/rooms/${ROOM_ID}/messages`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+      body:JSON.stringify({message:text})
+    });
+    if(res.ok){ const m = await res.json(); appendMsg(m); }
+  }catch(e){ console.error(e); }
+  finally{ sendBtn.disabled=false; input.focus(); }
+}
+
+async function poll(){
+  try{
+    const url = `/chat/api/rooms/${ROOM_ID}/messages${lastTs?'?after='+encodeURIComponent(lastTs):''}`;
+    const res  = await fetch(url);
+    const msgs = await res.json();
+    msgs.forEach(m=>{ if(m.sender_id!==MY_ID) appendMsg(m); });
+  }catch(e){}
+}
+setInterval(poll, 3000);
+</script>
+{% endblock %}

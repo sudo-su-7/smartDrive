@@ -1,0 +1,96 @@
+name: SmartDrive CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest pytest-cov
+
+      - name: Static template + JS tests (no DB required)
+        run: |
+          python3 -m unittest \
+            tests.test_frontend_js.TestTemplateStructure \
+            tests.test_frontend_js.TestMainJS -v
+
+      - name: Full test suite with coverage
+        env:
+          FLASK_ENV: testing
+          SECRET_KEY: ci-test-key-not-for-production
+          MONGO_URI: mongodb://localhost:27017/
+          MONGO_DB_NAME: smart_drive_test
+          WTF_CSRF_ENABLED: "False"
+        run: |
+          pytest tests/test_unit_models.py tests/test_integration_routes.py \
+            -v --cov=app --cov-report=xml --cov-report=term-missing \
+            --cov-fail-under=70
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          file: ./coverage.xml
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt playwright pytest-playwright
+      - run: playwright install chromium --with-deps
+      - name: Start app
+        env:
+          FLASK_ENV: testing
+          SECRET_KEY: ci-test-key
+          MONGO_URI: mongodb://localhost:27017/
+          MONGO_DB_NAME: smart_drive_e2e
+        run: |
+          python run.py &
+          sleep 4
+          curl -f http://localhost:5000/ || exit 1
+      - name: E2E tests
+        env:
+          E2E_BASE_URL: http://localhost:5000
+        run: pytest tests/test_e2e_playwright.py -v --screenshot=on --video=retain-on-failure
+      - name: Upload failure artifacts
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: playwright-failures
+          path: test-results/
