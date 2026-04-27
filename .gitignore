@@ -1,0 +1,17 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.DS_Store
+*.log
+app/static/uploads/vehicles/*.png
+app/static/uploads/vehicles/*.jpg
+app/static/uploads/vehicles/*.jpeg
+app/static/uploads/vehicles/*.webp
+instance/

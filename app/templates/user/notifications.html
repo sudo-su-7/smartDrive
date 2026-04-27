@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-wrapper" style="padding-top:2.5rem;padding-bottom:3rem;max-width:700px">
+  <div style="margin-bottom:1.75rem"><h1 class="t-h1">Notifications</h1><p style="color:var(--text-secondary);font-size:.875rem;margin:.25rem 0 0">Your recent activity and updates</p></div>
+
+  {% if notifications %}
+  <div class="card">
+    {% for n in notifications %}
+    <a href="{{ n.link or '#' }}"
+       style="display:flex;align-items:flex-start;gap:.875rem;padding:1rem 1.25rem;border-bottom:1px solid var(--border);text-decoration:none;transition:background var(--t-fast);{{ 'background:var(--bg-raised)' if not n.read else '' }}"
+       onmouseover="this.style.background='var(--bg-raised)'" onmouseout="this.style.background='{{ 'var(--bg-raised)' if not n.read else '' }}'">
+      <div style="width:8px;height:8px;border-radius:50%;background:{{ 'var(--c-brand-500)' if not n.read else 'transparent' }};flex-shrink:0;margin-top:.45rem"></div>
+      <div style="flex:1;min-width:0">
+        <p style="font-size:.875rem;color:var(--text-primary);margin:0 0 .25rem;line-height:1.5">{{ n.message }}</p>
+        <span style="font-size:.75rem;color:var(--text-tertiary)">{{ n.created_at.strftime('%d %b %Y · %H:%M') if n.created_at else '' }}</span>
+      </div>
+      {% if not n.read %}<span class="badge badge-blue" style="flex-shrink:0">New</span>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state"><i class="bi bi-bell"></i><h5>No notifications</h5><p>You're all caught up! Notifications about your bookings will appear here.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,163 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_content %}
+<div style="padding:1.75rem var(--page-px) 2.5rem">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.75rem;flex-wrap:wrap">
+    <a href="{{ url_for('admin.bookings') }}" class="btn btn-secondary btn-sm"><i class="bi bi-arrow-left"></i> Back</a>
+    <a href="{{ url_for('chat.booking_chat', booking_id=booking._id) }}" class="btn btn-primary btn-sm">
+      <i class="bi bi-chat-dots"></i> Chat with Customer
+    </a>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 340px;gap:1.5rem;align-items:start">
+
+    <!-- Left -->
+    <div style="display:flex;flex-direction:column;gap:1.25rem">
+      <div class="card card-p-lg">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem">
+          <h2 style="font-size:1.25rem;font-weight:800;color:var(--text-primary);margin:0">Booking Details</h2>
+          <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+            <span class="badge status-{{ booking.status }}" style="font-size:.8rem;padding:.3rem .75rem">{{ booking.status|title }}</span>
+            <span class="badge status-{{ booking.payment_status }}" style="font-size:.8rem;padding:.3rem .75rem">{{ booking.payment_status|replace('_',' ')|title }}</span>
+          </div>
+        </div>
+
+        {% if vehicle %}
+        <div style="display:flex;align-items:center;gap:.875rem;padding:.875rem;background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-md);margin-bottom:1.5rem">
+          {% if vehicle.image %}
+          <img src="{{ url_for('static', filename='uploads/vehicles/' + vehicle.image) }}"
+               style="width:72px;height:52px;object-fit:cover;border-radius:var(--r-sm);flex-shrink:0" alt="{{ vehicle.name }}"/>
+          {% else %}
+          <div style="width:72px;height:52px;background:var(--bg-sunken);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);font-size:1.5rem;flex-shrink:0"><i class="bi bi-car-front"></i></div>
+          {% endif %}
+          <div>
+            <div style="font-weight:700;font-size:.9375rem;color:var(--text-primary)">{{ vehicle.name }}</div>
+            <div style="font-size:.8rem;color:var(--text-secondary)">{{ vehicle.model }} · {{ vehicle.plate_number }}</div>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="booking-timeline" style="margin-bottom:1.5rem">
+          <div class="bt-date"><div class="bt-day">{{ booking.start_date.strftime('%d') }}</div><div class="bt-month">{{ booking.start_date.strftime('%b %Y') }}</div></div>
+          <div class="bt-arrow"><i class="bi bi-arrow-right" style="color:var(--text-tertiary)"></i><span style="font-weight:600;color:var(--text-secondary)">{{ booking.days }} day{{ 's' if booking.days>1 else '' }}</span></div>
+          <div class="bt-date"><div class="bt-day">{{ booking.end_date.strftime('%d') }}</div><div class="bt-month">{{ booking.end_date.strftime('%b %Y') }}</div></div>
+        </div>
+
+        {% if booking.pickup_location and booking.pickup_location.address %}
+        <div style="margin-bottom:.625rem">
+          <p style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);margin:0 0 .35rem">Pick-up</p>
+          <div class="loc-chip"><i class="bi bi-geo-alt-fill" style="color:var(--c-success-500);flex-shrink:0"></i><span>{{ booking.pickup_location.address }}</span></div>
+        </div>
+        {% endif %}
+        {% if booking.dropoff_location and booking.dropoff_location.address %}
+        <div style="margin-bottom:1rem">
+          <p style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);margin:0 0 .35rem">Drop-off</p>
+          <div class="loc-chip"><i class="bi bi-geo-alt-fill" style="color:var(--c-danger-500);flex-shrink:0"></i><span>{{ booking.dropoff_location.address }}</span></div>
+        </div>
+        {% endif %}
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.5rem">
+          {% for label, val in [('Rate/Day','KES {:,.0f}'.format(booking.price_per_day)),('Total','KES {:,.2f}'.format(booking.total_amount)),('Submitted',booking.created_at.strftime('%d %b %Y %H:%M'))] %}
+          <div>
+            <div style="font-size:.72rem;color:var(--text-tertiary);font-weight:600;text-transform:uppercase;letter-spacing:.06em">{{ label }}</div>
+            <div style="font-size:.875rem;font-weight:600;color:var(--text-primary);margin-top:.2rem">{{ val }}</div>
+          </div>
+          {% endfor %}
+          {% if booking.mpesa_transaction_id %}
+          <div style="grid-column:1/-1">
+            <div style="font-size:.72rem;color:var(--text-tertiary);font-weight:600;text-transform:uppercase;letter-spacing:.06em">M-Pesa Txn ID</div>
+            <div style="font-size:.875rem;font-weight:600;color:var(--c-success-700);margin-top:.2rem;font-family:monospace">{{ booking.mpesa_transaction_id }}</div>
+          </div>
+          {% endif %}
+        </div>
+
+        {% if booking.notes %}
+        <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+          <p style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);margin:0 0 .4rem">Customer Notes</p>
+          <p style="font-size:.875rem;color:var(--text-secondary);margin:0;line-height:1.65">{{ booking.notes }}</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Customer info -->
+      <div class="card card-p">
+        <div style="font-size:.8125rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);margin-bottom:1rem">Customer</div>
+        {% if user %}
+        <div style="display:flex;align-items:center;gap:.875rem">
+          <div class="avatar avatar-xl" style="flex-shrink:0">{{ user.name[0]|upper }}</div>
+          <div>
+            <div style="font-weight:700;font-size:.9375rem;color:var(--text-primary)">{{ user.name }}</div>
+            <div style="font-size:.8125rem;color:var(--text-secondary)">{{ user.email }}</div>
+            {% if user.phone %}<div style="font-size:.8125rem;color:var(--text-secondary)"><i class="bi bi-telephone" style="margin-right:.3rem"></i>{{ user.phone }}</div>{% endif %}
+          </div>
+        </div>
+        {% else %}
+        <p style="color:var(--text-secondary);font-size:.875rem;margin:0">User not found</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Right: action panel -->
+    <div style="display:flex;flex-direction:column;gap:1rem;position:sticky;top:calc(var(--topbar-h)+1rem)">
+
+      {% if booking.status=='pending' %}
+      <div class="card card-p" style="border-top:3px solid var(--c-warning-500)">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1.25rem">
+          <div class="stat-icon si-amber" style="flex-shrink:0"><i class="bi bi-exclamation-triangle"></i></div>
+          <span style="font-weight:700;color:var(--c-warning-700)">Review Required</span>
+        </div>
+        <form method="POST" novalidate>
+          {{ form.hidden_tag() }}
+          <div class="form-group">
+            <label class="form-label">Decision</label>
+            {{ form.action(class="form-select") }}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Admin Notes <span style="color:var(--text-tertiary);font-weight:400">(optional)</span></label>
+            {{ form.admin_notes(class="form-control", rows=3, placeholder="Note to the customer…") }}
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Submit Decision</button>
+        </form>
+      </div>
+
+      {% else %}
+      <div class="card card-p">
+        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);margin-bottom:.875rem">Review Outcome</div>
+        <span class="badge status-{{ booking.status }}" style="font-size:.8rem;padding:.3rem .75rem;margin-bottom:.875rem;display:inline-block">{{ booking.status|title }}</span>
+        {% if booking.admin_notes %}
+        <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-md);padding:.875rem;margin-bottom:.875rem">
+          <p style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);margin:0 0 .35rem">Admin Notes</p>
+          <p style="font-size:.875rem;color:var(--text-secondary);margin:0">{{ booking.admin_notes }}</p>
+        </div>
+        {% endif %}
+        {% if booking.reviewed_at %}<p style="font-size:.78rem;color:var(--text-tertiary);margin:0">Reviewed {{ booking.reviewed_at.strftime('%d %b %Y %H:%M') }}</p>{% endif %}
+
+        {% if booking.status=='approved' %}
+        <div style="height:1px;background:var(--border);margin:1rem 0"></div>
+        <p style="font-size:.8125rem;color:var(--text-secondary);margin:0 0 .875rem">Has the customer returned the vehicle?</p>
+        <form method="POST" action="{{ url_for('admin.complete_booking', booking_id=booking._id) }}"
+              onsubmit="return confirm('Mark as completed (vehicle returned)?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <button class="btn btn-success btn-block"><i class="bi bi-check2-circle"></i> Mark as Completed</button>
+        </form>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Quick actions -->
+      <div class="card card-p">
+        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);margin-bottom:.875rem">Quick Actions</div>
+        <div style="display:flex;flex-direction:column;gap:.5rem">
+          <a href="{{ url_for('chat.booking_chat', booking_id=booking._id) }}" class="btn btn-outline-brand btn-block btn-sm">
+            <i class="bi bi-chat-dots"></i> Open Chat
+          </a>
+          {% if booking.payment_status=='paid' %}
+          <div class="alert alert-success" style="padding:.625rem .875rem;margin:0;font-size:.8125rem">
+            <i class="bi bi-check-circle-fill"></i><span>M-Pesa payment received</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

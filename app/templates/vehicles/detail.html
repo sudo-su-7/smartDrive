@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-wrapper" style="padding-top:2.5rem;padding-bottom:3rem">
+  <nav style="font-size:.8125rem;color:var(--text-secondary);margin-bottom:1.75rem">
+    <a href="{{ url_for('main.vehicles') }}" style="color:var(--text-secondary)">Vehicles</a>
+    <span style="margin:0 .5rem;color:var(--text-tertiary)">/</span>
+    <span style="color:var(--text-primary)">{{ vehicle.name }}</span>
+  </nav>
+
+  <div style="display:grid;grid-template-columns:1fr 360px;gap:2rem;align-items:start">
+    <!-- Left -->
+    <div>
+      {% if vehicle.image %}
+      <img src="{{ url_for('static', filename='uploads/vehicles/' + vehicle.image) }}"
+           alt="{{ vehicle.name }}" style="width:100%;height:380px;object-fit:cover;border-radius:var(--r-xl);display:block;margin-bottom:1.5rem"/>
+      {% else %}
+      <div class="vehicle-placeholder" style="border-radius:var(--r-xl);margin-bottom:1.5rem;height:320px;font-size:5rem"><i class="bi bi-car-front"></i></div>
+      {% endif %}
+
+      <div class="card card-p">
+        <h3 style="font-size:1rem;font-weight:700;color:var(--text-primary);margin:0 0 1.1rem;display:flex;align-items:center;gap:.5rem">
+          <i class="bi bi-list-check" style="color:var(--c-brand-600)"></i> Specifications
+        </h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+          {% for icon, label, val in [('fuel-pump','Fuel',vehicle.fuel_type|title),('gear','Transmission',vehicle.transmission|title),('people','Capacity',vehicle.capacity|string+' passengers'),('car-front','Model',vehicle.model),('upc-scan','Plate',vehicle.plate_number),('circle-fill','Status',vehicle.status|title)] %}
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem;background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-md)">
+            <i class="bi bi-{{ icon }}" style="color:var(--c-brand-600);font-size:.9rem;flex-shrink:0"></i>
+            <div>
+              <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary)">{{ label }}</div>
+              <div style="font-size:.875rem;font-weight:600;color:var(--text-primary)">{{ val }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% if vehicle.description %}
+        <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+          <h4 style="font-size:.875rem;font-weight:700;color:var(--text-primary);margin:0 0 .5rem">About this vehicle</h4>
+          <p style="font-size:.875rem;color:var(--text-secondary);line-height:1.7;margin:0">{{ vehicle.description }}</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Right: booking panel -->
+    <div style="position:sticky;top:calc(var(--topbar-h)+1rem)">
+      <div class="card" style="overflow:hidden">
+        <!-- Price header -->
+        <div style="background:linear-gradient(135deg,var(--c-brand-800),var(--c-brand-600));padding:1.5rem;color:#fff">
+          <h2 style="font-size:1.375rem;font-weight:800;letter-spacing:-.02em;margin:0 0 .25rem">{{ vehicle.name }}</h2>
+          <p style="font-size:.8125rem;color:rgba(255,255,255,.7);margin:0 0 1rem">{{ vehicle.model }}</p>
+          <div style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:var(--r-md);padding:.875rem 1rem">
+            <div style="font-size:.7rem;opacity:.7;text-transform:uppercase;letter-spacing:.07em">Daily Rate</div>
+            <div style="font-size:2rem;font-weight:800;letter-spacing:-.04em;line-height:1.1">KES {{ '{:,.0f}'.format(vehicle.price_per_day) }}</div>
+            <div style="font-size:.75rem;opacity:.65;margin-top:.15rem">per day · M-Pesa accepted</div>
+          </div>
+        </div>
+
+        <div class="card-p">
+          <!-- Feature tags -->
+          <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1.25rem">
+            <span class="badge badge-green"><i class="bi bi-phone"></i> M-Pesa</span>
+            <span class="badge badge-blue"><i class="bi bi-geo-alt"></i> GPS Pickup</span>
+            <span class="badge badge-purple"><i class="bi bi-chat-dots"></i> Live Chat</span>
+          </div>
+
+          {% if vehicle.status == 'available' %}
+            {% if current_user.is_authenticated and not current_user.is_admin() %}
+            <a href="{{ url_for('user.book_vehicle', vehicle_id=vehicle._id) }}" class="btn btn-primary btn-block btn-lg" style="margin-bottom:.75rem">
+              <i class="bi bi-calendar-plus"></i> Book This Vehicle
+            </a>
+            {% elif not current_user.is_authenticated %}
+            <a href="{{ url_for('auth.login') }}?next={{ url_for('user.book_vehicle', vehicle_id=vehicle._id) }}" class="btn btn-primary btn-block btn-lg" style="margin-bottom:.75rem">
+              <i class="bi bi-box-arrow-in-right"></i> Sign In to Book
+            </a>
+            <a href="{{ url_for('auth.register') }}" class="btn btn-outline btn-block" style="margin-bottom:.75rem">New? Create account</a>
+            {% else %}
+            <div class="alert alert-info" style="margin-bottom:.75rem"><i class="bi bi-info-circle"></i><span>Admins cannot make bookings.</span></div>
+            {% endif %}
+          {% else %}
+          <div class="alert alert-warning" style="margin-bottom:.75rem"><i class="bi bi-tools"></i><span>Under maintenance</span></div>
+          {% endif %}
+
+          {% if current_user.is_authenticated %}
+          <a href="{{ url_for('chat.support_chat') }}" class="btn btn-outline-brand btn-block">
+            <i class="bi bi-chat-dots"></i> Ask a Question
+          </a>
+          {% endif %}
+
+          <!-- Trust items -->
+          <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:.55rem">
+            {% for icon, text, c in [('shield-check','Free cancellation (pending bookings)','var(--c-success-500)'),('phone','Instant M-Pesa STK Push','var(--c-mpesa-500)'),('geo-alt','Custom pickup & drop-off','var(--c-brand-600)')] %}
+            <div style="display:flex;align-items:center;gap:.5rem;font-size:.8rem;color:var(--text-secondary)">
+              <i class="bi bi-{{ icon }}" style="color:{{ c }};flex-shrink:0"></i> {{ text }}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

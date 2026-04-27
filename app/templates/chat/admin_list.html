@@ -1,0 +1,41 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_content %}
+<div style="padding:1.75rem var(--page-px) 2.5rem">
+  <div style="margin-bottom:1.75rem"><h2 class="t-h2">Support Chats</h2><p style="color:var(--text-secondary);font-size:.875rem;margin:.2rem 0 0">Active conversations with customers</p></div>
+
+  {% if rooms %}
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table class="table">
+        <thead><tr><th>Customer</th><th>Type</th><th>Last Message</th><th>Unread</th><th>Last Activity</th><th></th></tr></thead>
+        <tbody>
+          {% for r in rooms %}
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:.75rem">
+                <div class="avatar">{{ (r.user_doc.name[0]|upper) if r.user_doc else '?' }}</div>
+                <div>
+                  <div style="font-weight:600;font-size:.875rem">{{ r.user_doc.name if r.user_doc else 'Unknown' }}</div>
+                  <div style="font-size:.75rem;color:var(--text-secondary)">{{ r.user_doc.email if r.user_doc else '' }}</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="badge {{ 'badge-blue' if r.booking_id else 'badge-gray' }}">{{ 'Booking' if r.booking_id else 'Support' }}</span></td>
+            <td style="font-size:.8125rem;color:var(--text-secondary);max-width:200px" class="truncate">{{ r.last_message or '—' }}</td>
+            <td>{% if r.unread>0 %}<span class="badge badge-red">{{ r.unread }}</span>{% else %}<span style="color:var(--text-tertiary);font-size:.8rem">—</span>{% endif %}</td>
+            <td style="font-size:.8125rem;color:var(--text-secondary)">{{ r.updated_at.strftime('%d %b %H:%M') if r.updated_at else '—' }}</td>
+            <td>
+              {% if r.booking_id %}<a href="{{ url_for('chat.booking_chat', booking_id=r.booking_id) }}" class="btn btn-primary btn-sm">Open</a>
+              {% else %}<a href="{{ url_for('chat.support_chat') }}" class="btn btn-secondary btn-sm">Open</a>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state"><i class="bi bi-chat-dots"></i><h5>No active chats</h5><p>Support conversations will appear here when customers reach out.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

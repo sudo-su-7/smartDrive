@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Hero -->
+<section class="hero">
+  <div class="page-wrapper" style="position:relative;z-index:1">
+    <div style="max-width:640px">
+      <div style="display:inline-flex;align-items:center;gap:.5rem;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:var(--r-full);padding:.3rem 1rem;font-size:.78rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:rgba(255,255,255,.9);margin-bottom:1.5rem">
+        <i class="bi bi-star-fill" style="color:#fbbf24;font-size:.7rem"></i> {{ site.hero_badge or "Kenya's #1 Vehicle Hire Platform" }}
+      </div>
+      {% set hero_lines = (site.hero_heading or "Drive Smart,\nGo Anywhere.").split("\n") %}
+      <h1 class="t-display" style="color:#fff;margin-bottom:1.25rem">{{ hero_lines[0] }}{% if hero_lines|length > 1 %}<br><span style="color:rgba(255,255,255,.65)">{{ hero_lines[1] }}</span>{% endif %}</h1>
+      <p style="font-size:1.05rem;color:rgba(255,255,255,.8);line-height:1.7;max-width:500px;margin-bottom:2.25rem">
+        {{ site.hero_subheading or "Your journey starts with a tap. SmartDrive puts Kenya's most trusted vehicle fleet at your fingertips — built for business travel, school runs, upcountry trips, and every road in between." }}
+      </p>
+
+      <!-- Search bar -->
+      <form action="{{ url_for('main.vehicles') }}" method="GET">
+        <div style="display:flex;gap:.5rem;background:rgba(255,255,255,.95);border-radius:var(--r-xl);padding:.5rem .5rem .5rem .875rem;box-shadow:0 20px 40px rgba(0,0,0,.25);max-width:560px">
+          <div style="flex:1;display:flex;align-items:center;gap:.5rem">
+            <i class="bi bi-search" style="color:var(--text-tertiary);flex-shrink:0"></i>
+            <input type="text" name="q" class="form-control" placeholder="Search by name, type, capacity…"
+                   style="border:none;box-shadow:none;padding:.25rem 0;font-size:.9375rem;background:transparent"/>
+          </div>
+          <button type="submit" class="btn btn-primary" style="border-radius:var(--r-lg)">Find Vehicles</button>
+        </div>
+      </form>
+
+      <!-- Trust row -->
+      <div style="display:flex;flex-wrap:wrap;gap:1.25rem;margin-top:2rem">
+        {% for icon, text in [('shield-check-fill','Verified Fleet'),('phone-fill','M-Pesa Payments'),('geo-alt-fill','GPS Pickup'),('headset','24/7 Support')] %}
+        <div style="display:flex;align-items:center;gap:.4rem;color:rgba(255,255,255,.8);font-size:.8125rem">
+          <i class="bi bi-{{ icon }}" style="color:#fbbf24"></i> {{ text }}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats bar -->
+<section style="background:var(--bg-surface);border-bottom:1px solid var(--border);padding:.1rem 0">
+  <div class="page-wrapper">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);text-align:center;gap:0">
+      {% for val, label in [(stats.total_vehicles,'Vehicles'),(stats.available_vehicles,'Available'),(stats.total_bookings,'Bookings'),('500+','Customers')] %}
+      <div style="padding:1.25rem;border-right:1px solid var(--border)">
+        <div style="font-size:1.6rem;font-weight:800;letter-spacing:-.03em;color:var(--c-brand-600)">{{ val }}</div>
+        <div style="font-size:.78rem;color:var(--text-secondary);margin-top:.15rem">{{ label }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Featured vehicles -->
+<section style="padding:4rem 0">
+  <div class="page-wrapper">
+    <div class="row-between" style="margin-bottom:2rem">
+      <div>
+        <h2 style="font-size:1.5rem;font-weight:800;letter-spacing:-.025em;color:var(--text-primary);margin:0">Available Vehicles</h2>
+        <p style="color:var(--text-secondary);margin:.35rem 0 0;font-size:.875rem">Handpicked fleet ready for your journey</p>
+      </div>
+      <a href="{{ url_for('main.vehicles') }}" class="btn btn-secondary btn-sm">
+        View All <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+
+    {% if vehicles %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1.25rem">
+      {% for v in vehicles %}
+      <div class="vehicle-card card-hover">
+        <div class="vehicle-img-wrap">
+          {% if v.image %}
+          <img src="{{ url_for('static', filename='uploads/vehicles/' + v.image) }}" class="vehicle-img" alt="{{ v.name }}"/>
+          {% else %}
+          <div class="vehicle-placeholder"><i class="bi bi-car-front"></i></div>
+          {% endif %}
+          <span class="vehicle-status-badge badge-green">Available</span>
+        </div>
+        <div class="vehicle-body">
+          <div class="vehicle-name">{{ v.name }}</div>
+          <div class="vehicle-model">{{ v.model }}</div>
+          <div class="vehicle-specs">
+            <span class="spec-tag"><i class="bi bi-fuel-pump"></i>{{ v.fuel_type|title }}</span>
+            <span class="spec-tag"><i class="bi bi-gear"></i>{{ v.transmission|title }}</span>
+            <span class="spec-tag"><i class="bi bi-people"></i>{{ v.capacity }}</span>
+          </div>
+          <div class="vehicle-footer">
+            <div>
+              <span class="vehicle-price">KES {{ '{:,.0f}'.format(v.price_per_day) }}</span>
+              <span class="vehicle-price-unit"> /day</span>
+            </div>
+            {% if current_user.is_authenticated and not current_user.is_admin() %}
+            <a href="{{ url_for('user.book_vehicle', vehicle_id=v._id) }}" class="btn btn-primary btn-sm">Book Now</a>
+            {% else %}
+            <a href="{{ url_for('main.vehicle_detail', vehicle_id=v._id) }}" class="btn btn-outline-brand btn-sm">Details</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="bi bi-car-front"></i>
+      <h5>No vehicles available</h5>
+      <p>Check back soon for new additions to our fleet.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- Features -->
+<section style="padding:4rem 0;background:var(--bg-raised);border-top:1px solid var(--border)">
+  <div class="page-wrapper">
+    <div style="text-align:center;margin-bottom:3rem">
+      <h2 style="font-size:1.5rem;font-weight:800;letter-spacing:-.025em;color:var(--text-primary);margin:0">Why SmartDrive?</h2>
+      <p style="color:var(--text-secondary);margin:.5rem 0 0;font-size:.9rem">Everything you need for a seamless hire experience</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.25rem">
+      {% for icon, si, title, desc in [
+        ('lock-fill','si-green','Bank-Grade Security','Your payments and personal data are encrypted end-to-end. We never store raw card details — only tokenised M-Pesa receipts.'),
+        ('geo-alt-fill','si-blue','GPS Pickup & Drop-off','Pin your exact location on an interactive map. Our driver comes to you — no confusing meetup points.'),
+        ('chat-dots-fill','si-purple','Live Chat Support','Direct messaging with our team 24/7. Have a question about your booking? We reply in minutes, not days.'),
+        ('shield-check-fill','si-amber','Verified & Insured Fleet','Every vehicle passes a 50-point inspection before listing. Fully insured, road-worthy, and clean.'),
+      ] %}
+      <div class="card card-p" style="text-align:center">
+        <div class="stat-icon {{ si }}" style="margin:0 auto .875rem"><i class="bi bi-{{ icon }}"></i></div>
+        <div style="font-weight:700;font-size:.9375rem;color:var(--text-primary);margin-bottom:.375rem">{{ title }}</div>
+        <p style="font-size:.8125rem;color:var(--text-secondary);margin:0;line-height:1.6">{{ desc }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+{% if not current_user.is_authenticated %}
+<section style="padding:4rem 0;background:linear-gradient(135deg,var(--c-brand-800),var(--c-brand-600));text-align:center">
+  <div class="page-wrapper">
+    <h2 style="font-size:2rem;font-weight:800;color:#fff;margin:0 0 .75rem;letter-spacing:-.025em">{{ site.cta_heading or "Every Journey Deserves a Great Vehicle" }}</h2>
+    <p style="color:rgba(255,255,255,.8);font-size:1rem;max-width:520px;margin:0 auto 2rem">{{ site.cta_body or "Stop settling for unreliable transport. Join thousands of Kenyans who book smarter, travel safer, and pay easier with SmartDrive." }}</p>
+    <div style="display:flex;gap:.875rem;justify-content:center;flex-wrap:wrap">
+      <a href="{{ url_for('auth.register') }}" class="btn btn-lg" style="background:#fff;color:var(--c-brand-700);font-weight:700">
+        <i class="bi bi-person-plus"></i> Create Account
+      </a>
+      <a href="{{ url_for('main.vehicles') }}" class="btn btn-lg" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)">
+        Browse Vehicles
+      </a>
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="min-height:calc(100vh - 200px);display:grid;place-items:center;padding:2rem var(--page-px)">
+  <div class="mpesa-card">
+    <div class="mpesa-header" style="text-align:center;padding:1.5rem">
+      <div class="mpesa-wordmark">M-PESA</div>
+      <p style="font-size:.8rem;opacity:.75;margin:.2rem 0 0">Payment Status</p>
+    </div>
+    <div class="mpesa-body" style="text-align:center">
+      <div class="payment-status-circle psc-pending" id="statusCircle">
+        <i class="bi bi-phone-vibrate" id="statusIcon" style="animation:spin 1s linear infinite"></i>
+      </div>
+      <h3 style="font-size:1.125rem;font-weight:800;color:var(--text-primary);margin:0 0 .5rem" id="statusTitle">Awaiting Payment…</h3>
+      <p style="font-size:.875rem;color:var(--text-secondary);margin:0 0 1.5rem;line-height:1.65" id="statusMsg">
+        Check your phone for the M-Pesa PIN prompt. This page updates automatically.
+      </p>
+
+      {% if vehicle %}
+      <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-md);padding:1rem;margin-bottom:1.5rem;text-align:left">
+        {% for label, val in [('Vehicle', vehicle.name),('Amount','KES {:,.0f}'.format(booking.total_amount)),('Duration',booking.days|string+' day'+('s' if booking.days>1 else ''))] %}
+        <div style="display:flex;justify-content:space-between;font-size:.8125rem;{{ 'margin-bottom:.5rem' if not loop.last else '' }}">
+          <span style="color:var(--text-secondary)">{{ label }}</span>
+          <span style="font-weight:600">{{ val }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div id="actionBtns" style="display:none;flex-direction:column;gap:.5rem">
+        <a href="{{ url_for('user.booking_detail', booking_id=booking._id) }}" class="btn btn-primary btn-block">View Booking</a>
+        <a href="{{ url_for('user.bookings') }}" class="btn btn-secondary btn-block">My Bookings</a>
+      </div>
+
+      <div id="retryBtn" style="display:none;margin-top:.875rem">
+        <a href="{{ url_for('payment.mpesa_pay', booking_id=booking._id) }}" class="btn btn-mpesa btn-block">
+          <i class="bi bi-arrow-repeat"></i> Retry Payment
+        </a>
+      </div>
+
+      <p style="font-size:.75rem;color:var(--text-tertiary);margin-top:1.25rem" id="pollInfo">Checking every 5 seconds…</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+<script>
+const BID   = {{ booking._id|string|tojson }};
+let polls   = 0;
+const MAX   = 36;
+
+async function check(){
+  try{
+    const res  = await fetch(`/payment/mpesa/poll/${BID}`);
+    const data = await res.json();
+    polls++;
+
+    const circle = document.getElementById('statusCircle');
+    const icon   = document.getElementById('statusIcon');
+    const title  = document.getElementById('statusTitle');
+    const msg    = document.getElementById('statusMsg');
+    const info   = document.getElementById('pollInfo');
+    const btns   = document.getElementById('actionBtns');
+    const retry  = document.getElementById('retryBtn');
+
+    if(data.payment_status === 'paid'){
+      circle.className = 'payment-status-circle psc-paid';
+      icon.className   = 'bi bi-check-circle-fill';
+      icon.style.animation = '';
+      title.textContent = 'Payment Confirmed ✅';
+      msg.textContent   = 'Your M-Pesa payment was successful. Your booking is now confirmed.';
+      info.textContent  = '';
+      btns.style.display = 'flex';
+      return;
+    }
+    if(data.payment_status === 'unpaid' && polls > 3){
+      circle.className = 'payment-status-circle psc-failed';
+      icon.className   = 'bi bi-x-circle-fill';
+      icon.style.animation = '';
+      title.textContent = 'Payment Not Completed';
+      msg.textContent   = 'The payment was cancelled or timed out. Please try again.';
+      info.textContent  = '';
+      retry.style.display = 'block';
+      return;
+    }
+    if(polls >= MAX){
+      info.textContent = 'Timed out. Check your bookings or retry.';
+      retry.style.display = 'block';
+      return;
+    }
+    info.textContent = `Checking… (${polls}/${MAX})`;
+    setTimeout(check, 5000);
+  }catch(e){ setTimeout(check, 5000); }
+}
+setTimeout(check, 3000);
+</script>
+{% endblock %}
