@@ -52,76 +52,6 @@ SmartDrive is a vehicle hire and fleet management platform built for the Kenyan 
 
 ---
 
-## 2. Architecture
-
-```
-smart_drive/
-├── run.py                        # Entry point — creates and runs the Flask app
-├── requirements.txt
-├── .env.example                  # Template — copy to .env and fill in
-├── install_linux.sh              # One-command setup (Linux/macOS)
-├── install_windows.bat           # One-command setup (Windows)
-│
-├── config/
-│   └── settings.py               # DevelopmentConfig / ProductionConfig, loaded from .env
-│
-└── app/
-    ├── __init__.py               # Application factory — registers blueprints, extensions, error handlers
-    ├── database.py               # PyMongo connection, index bootstrap, admin + vehicle seeding
-    ├── forms.py                  # All Flask-WTF form classes with server-side validation
-    │
-    ├── models/
-    │   ├── user.py               # User class (Flask-Login UserMixin), password hashing
-    │   ├── vehicle.py            # Vehicle document builder, availability checker
-    │   └── booking.py            # Booking document builder (includes location + M-Pesa fields)
-    │
-    ├── routes/
-    │   ├── main.py               # Public — home, vehicle listing, vehicle detail
-    │   ├── auth.py               # Register, login, logout, profile, change password
-    │   ├── user.py               # User dashboard, booking flow, cancel, notifications
-    │   ├── admin.py              # Fleet CRUD, booking management, user management, reports, CSV
-    │   ├── chat.py               # Chat rooms, REST message API, admin chat list
-    │   └── payment.py            # M-Pesa STK Push, Daraja callback, polling endpoint
-    │
-    ├── utils/
-    │   ├── helpers.py            # Decorators, sanitisation, file upload, Paginator
-    │   ├── mpesa.py              # Daraja API client (token, STK push, status query)
-    │   └── email.py              # Transactional email helpers (booking created/approved/rejected)
-    │
-    ├── static/
-    │   ├── css/main.css          # Full design system — 60+ CSS tokens, light/dark mode
-    │   ├── js/main.js            # Theme, sidebar, dropdowns, alerts, form helpers
-    │   └── uploads/vehicles/     # User-uploaded vehicle images (auto-created)
-    │
-    └── templates/
-        ├── base.html             # Public shell — topbar, mobile nav, flash, footer
-        ├── index.html            # Homepage
-        ├── admin/
-        │   ├── base_admin.html   # Admin shell — sidebar + topbar app layout
-        │   ├── dashboard.html    # Stats + Chart.js booking trend
-        │   ├── vehicles.html     # Vehicle table with search
-        │   ├── vehicle_form.html # Add / Edit vehicle form
-        │   ├── bookings.html     # Booking table with status filters
-        │   ├── booking_detail.html  # Review/approve/reject + location + chat link
-        │   ├── users.html        # User table, suspend/activate
-        │   └── reports.html      # Revenue chart, status doughnut, top vehicles
-        ├── auth/                 # login, register, profile, change_password
-        ├── chat/                 # room.html (user + admin), admin_list.html
-        ├── errors/               # 400, 403, 404, 429, 500
-        ├── payment/              # mpesa.html (pay form), status.html (polling page)
-        ├── user/                 # dashboard, bookings, book (with map), booking_detail, notifications
-        └── vehicles/             # listing, detail
-```
-
-### Request flow
-
-```
-Browser → Nginx (SSL termination) → Gunicorn (WSGI) → Flask app
-                                                      ├── Blueprint routes
-                                                      ├── MongoDB (PyMongo)
-                                                      └── Daraja API (outbound HTTPS)
-
-Safaricom servers → POST /payment/mpesa/callback → Flask (no auth, validates by CheckoutRequestID)
 ```
 
 ---
@@ -212,7 +142,6 @@ Password: Admin@SecurePass1!       (from ADMIN_PASSWORD in .env)
 
 ## 5. Environment Variables Reference
 
-Copy `.env.example` to `.env`. Never commit `.env` to version control.
 
 ```bash
 cp .env.example .env
